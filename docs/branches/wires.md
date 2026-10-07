@@ -4,7 +4,7 @@ Branch: `feature/wires`.
 
 The branch now opens a daylight scene with three wires: Email, Agents and Other. Each bird represents one sample item. Existing items begin perched; new items approach, brake and land. Reading an email softens its silhouette, an agent reply stirs its bird, and archiving an item makes its bird take off. The controls include a short recorded sequence and a reset. No accounts are connected.
 
-The Sky switch uses the same selected items and Ben Bashford’s flocking engine, extracted into the shared sky strategy. It preserves canonical item IDs. The original large flock and its controls remain available at `/classic.html`. Both scenes use the shared procedural bird renderer and retain Ben’s attribution.
+The Sky switch sends the same selected items into a compact pigeon flock. Birds follow broad circuits with individual response delays, alignment, separation and depth; the renderer adds fuller bodies, broad wings, rounded fan tails and faint wing bars. Fast, individually phased wingbeats alternate with brief glides, and the birds bank through turns. This is an illustrative model informed by [Cornell’s pigeon reference](https://www.allaboutbirds.org/guide/Rock_Pigeon/id) and [pigeon flight research](https://doi.org/10.1371/journal.pbio.3000299), not a calibrated biological simulation. Canonical item IDs are preserved. Ben Bashford’s original large flock and controls remain available at `/classic.html` with attribution.
 
 ## Scene and item boundaries
 
@@ -24,7 +24,7 @@ Pause freezes simulation time. Hidden tabs stop scheduling frames and resume wit
 
 Run `npm run check`, `npm test` and `npm run build`.
 
-The wire tests cover reservation stability, overflow, reappearance during departure, phone resizing, landing contact, braking, departure during landing, heading direction, weather expiry, reduced motion, stable IDs between scenes, duplicate and stale deliveries, reset/replay, pause, tab visibility and resource cleanup. The shared tests verify bird geometry and parity with the original flock simulation.
+The wire tests cover reservation stability, overflow, reappearance during departure, phone resizing, landing contact, braking, departure during landing, heading direction, weather expiry, reduced motion, stable IDs between scenes, duplicate and stale deliveries, reset/replay, pause, tab visibility and resource cleanup. Pigeon tests check coherent circling, continuous motion, usable screen bounds, snapshot ordering, frozen wingbeats, invalid weather and renderer state. The shared tests verify bird geometry and parity with the original flock simulation.
 
 Desktop and 390 × 844 browser checks exercised new email, reading, archive, selection, pause and scene switching. No device-specific frame-rate target has been measured. This is an interactive sample ready for the inputs branch’s normalized data; it does not read or change real email, documents or conversations.
 

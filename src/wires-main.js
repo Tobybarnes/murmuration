@@ -1,6 +1,7 @@
 import { createWireScene } from './scenes/wires.js';
 import { createWireSky } from './scenes/wire-sky.js';
 import { drawBird } from './renderers/birds.js';
+import { drawPigeon } from './renderers/pigeons.js';
 import { createSampleStore, sampleMinute } from './fixtures/wires.js';
 import { LANES } from './scenes/perches.js';
 
@@ -51,8 +52,8 @@ function addItem(category = 'email', announce = true) {
     readState: category === 'email' ? 'unread' : 'unknown', revision: 1, updatedAt: Date.now() };
   selectedId = itemId; apply(event('upsert', itemId, item));
   if (announce) {
-    const isVisible = scenes.wires.getFrame().birds.some(bird => bird.birdId === itemId);
-    notice(!isVisible ? 'Added to the sample inbox. This wire is full at this window size.' : paused && !reducedMotion.matches ? 'Added to the sample inbox. Resume to watch the arrival.' : category === 'email' ? 'A new email is finding its place.' : 'A document is joining the Other wire.');
+    const isVisible = scenes[active].getFrame().birds.some(bird => bird.birdId === itemId);
+    notice(!isVisible ? 'Added to the sample inbox. This wire is full at this window size.' : paused && !reducedMotion.matches ? 'Added to the sample inbox. Resume to watch the arrival.' : active === 'sky' ? 'A new bird is joining the flock.' : category === 'email' ? 'A new email is finding its place.' : 'A document is joining the Other wire.');
   }
   return itemId;
 }
@@ -101,7 +102,7 @@ function switchScene(next) {
   $('scene-wires').setAttribute('aria-pressed', String(next === 'wires'));
   $('scene-sky').setAttribute('aria-pressed', String(next === 'sky'));
   $('scene-caption').textContent = next === 'wires' ? 'Email, agents, and everything else.' : 'The same conversations, in flight.';
-  $('scene-detail').textContent = next === 'wires' ? 'Each bird keeps its own place.' : 'One bird for each sample item.';
+  $('scene-detail').textContent = next === 'wires' ? 'Each bird keeps its own place.' : 'A pigeon flock circling the city.';
   requestDraw();
 }
 function resize() {
@@ -137,7 +138,8 @@ function draw() {
       ctx.arc(bird.x, bird.y - (bird.pose === 'perched' ? bird.size * .7 : 0), bird.size * 1.55, 0, Math.PI * 2); ctx.stroke();
     }
     // Perched coordinates are feet; flight coordinates are body centres.
-    drawBird(ctx, bird, { colour: '#293d36', alpha: bird.readState === 'read' ? .52 : .92 });
+    const renderer = active === 'sky' ? drawPigeon : drawBird;
+    renderer(ctx, bird, { colour: '#293d36', alpha: active === 'sky' ? (bird.readState === 'read' ? .60 : .95) * bird.alpha : bird.readState === 'read' ? .52 : .92 });
   }
   const total = store.items().length;
   const visible = Object.values(frame.counts).reduce((sum, counts) => sum + counts.visible, 0);
