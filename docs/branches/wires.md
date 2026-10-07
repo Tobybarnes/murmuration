@@ -1,21 +1,31 @@
-# Telephone wire scene branch
+# Telephone wire scene
 
-Branch: `feature/wires`. Based on the live dot visualizer at `bb0cf87`. This brief describes planned work; creating the branch does not implement it.
+Branch: `feature/wires`.
 
-Build three telephone wires for Email, Agents and Other, with one visible bird for each selected item. The first deliverable uses a recorded fixture to show an arrival, a settled bird, an activity change and a departure. A new email should approach its wire and land without making the birds already there shuffle along. Preserve Ben Bashford’s attribution and the existing sky experiment.
+The branch now opens a daylight scene with three wires: Email, Agents and Other. Each bird represents one sample item. Existing items begin perched; new items approach, brake and land. Reading an email softens its silhouette, an agent reply stirs its bird, and archiving an item makes its bird take off. The controls include a short recorded sequence and a reset. No accounts are connected.
 
-Use the scene contract and Canvas renderer owned by the birds branch. The proposed strategy methods are `sync(items, changes)`, `update(dtMs, simTime)`, `getFrame()`, `setEnvironment(environment)`, `resize(viewport)` and `dispose()`. Frames carry stable `birdId`, position, velocity, pose, wing phase and scene geometry. The host continues to own the fixed clock, pause, resize, visibility, palette and cleanup. This branch owns proposed `src/scenes/wires.js`, `src/scenes/perches.js`, wire fixtures and their tests. It supplies wire geometry and movement; shared bird drawing and poses remain with the birds branch.
+The Sky switch uses the same selected items and Ben Bashford’s flocking engine, extracted into the shared sky strategy. It preserves canonical item IDs. The original large flock and its controls remain available at `/classic.html`. Both scenes use the shared procedural bird renderer and retain Ben’s attribution.
 
-The inputs branch owns item IDs, categories, read state, deletion records and provider reconciliation. Consume its normalized items and changes, using canonical `itemId` as `birdId`. Weather and listening state arrive through `setEnvironment(environment)` with freshness information. They can affect sky colour, subtle wire movement and resting behaviour without creating birds or changing item state. Keep perch reservations keyed by `birdId`, independently of array order. A scene switch preserves the same selected items and IDs; it can change their positions. The wire strategy must never invent an archive or mark an email read because an animation has finished.
+## Scene and item boundaries
 
-Implement the scene in three stages:
+`src/scenes/wires.js` implements `sync(items, changes)`, `update(dtMs, simTime)`, `getFrame()`, `setEnvironment(environment)`, `resize(viewport)` and `dispose()`. The frame, bird views, counts and wire geometry are reused. The host owns the fixed clock, pause, visibility, resizing and cleanup. Weather uses `windKph`, `windDirection`, `observedAt` and `expiresAt`; fresh wind shifts wire geometry and feet together. Ambient state never creates item birds.
 
-1. Draw the three wires with a shallow sag, readable category labels and static perched birds. Define deterministic perch slots with minimum spacing. Keep an occupied slot stable when another bird arrives or leaves. On resize, preserve reservations and reposition the layout gently.
-2. Add approach, braking, landing, perched and takeoff states. Reserve a free slot before an arrival approaches. Slow near the perch, place the feet on the wire, fold the wings and settle with a small body movement. Departures release their reservation when clear of the wire. Use the shared renderer’s poses throughout.
-3. Replay lifecycle changes. Initial history appears quietly on the wires. A new Inbox email lands; reading changes its appearance subtly; archiving or deletion triggers departure. An agent reply or document edit stirs its existing bird. Keep unknown read state explicit. Agree a bounded recent-activity window for sources without an Inbox.
+Perch reservations are keyed by canonical `itemId`. Reordering snapshots or adding and removing unrelated items does not move existing reservations. A departing bird releases its slot once clear of the wire. Resizing preserves slots that still fit and admits waiting items when space becomes available. An animation never changes the sample item’s read or archive state.
 
-When capacity is full, select a bounded visible set and show both visible and total counts. Each visible bird still represents one item. Test duplicate and delayed events, departure during landing, repeated scene switches, reconnect snapshots, overflow and phone rotation. Assert that no perch has two reservations and unaffected birds retain theirs. Inspect feet contact, braking and takeoff at normal speed, with a static reduced-motion alternative.
+The fixture store rejects duplicate deliveries and stale revisions, including delayed updates after removal. Activity responses ignore expired or repeated events. This store is a local sample source; private provider reconciliation belongs to the inputs branch.
 
-Performance targets remain unverified: 60 fps with 1,000 simple birds on the chosen desktop and 30 fps with 300 on the chosen phone. Perch spacing may impose a smaller visible capacity. Record that capacity, device, browser and two-minute frame-time measurements separately; frame rate does not establish how many birds remain readable.
+## Capacity and accessibility
 
-Related work: [bird rendering](https://github.com/Tobybarnes/murmuration/tree/feature/realistic-birds) and [inputs](https://github.com/Tobybarnes/murmuration/tree/feature/inputs). Start with perch allocation and fixtures; integrate the shared scene extraction before implementing the full animation loop.
+Wires keep at least 47 CSS pixels between slots. At a 390-pixel width, each wire holds six items; at 320 pixels it holds four. The scene shows total and displayed counts, plus the number waiting for space. Sky mode can show more of the same items because it does not require perches.
+
+Pause freezes simulation time. Hidden tabs stop scheduling frames and resume without replaying the hidden interval. Reduced-motion preferences start the scene paused and apply arrivals and removals at rest. Item selection, mark read, archive and scene switching are available through native controls. Short screens scroll through a full composition so the wires and controls remain separate.
+
+## Verification
+
+Run `npm run check`, `npm test` and `npm run build`.
+
+The wire tests cover reservation stability, overflow, reappearance during departure, phone resizing, landing contact, braking, departure during landing, heading direction, weather expiry, reduced motion, stable IDs between scenes, duplicate and stale deliveries, reset/replay, pause, tab visibility and resource cleanup. The shared tests verify bird geometry and parity with the original flock simulation.
+
+Desktop and 390 × 844 browser checks exercised new email, reading, archive, selection, pause and scene switching. No device-specific frame-rate target has been measured. This is an interactive sample ready for the inputs branch’s normalized data; it does not read or change real email, documents or conversations.
+
+Related branches: [bird rendering](https://github.com/Tobybarnes/murmuration/tree/feature/realistic-birds) and [inputs](https://github.com/Tobybarnes/murmuration/tree/feature/inputs).
