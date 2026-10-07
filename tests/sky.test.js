@@ -64,6 +64,7 @@ test('empty and single-item inputs ignore the classic minimum and keep predator 
 test('repeated activity events cannot restart a bird response', () => {
   const scene = createSkyScene();
   const items = [{ itemId: 'a' }];
+  scene.sync([]);
   const changes = [{ eventId: 'arrived', itemId: 'a', type: 'activity', expiresAt: Date.now() + 10000 }];
   scene.sync(items, changes);
   scene.update(1000, 1000);
@@ -98,4 +99,13 @@ test('fresh ambient state affects movement without creating birds and stale stat
   assert.equal(fresh.count, baseline.count);
   assert.notEqual(fresh.digest, baseline.digest);
   assert.deepEqual(stale, baseline);
+});
+
+
+test('the first item snapshot populates quietly without replaying arrival events', () => {
+  const scene = createSkyScene();
+  scene.sync([{ itemId: 'email/existing' }], [{ eventId: 'snapshot', itemId: 'email/existing', type: 'upsert', expiresAt: Date.now() + 60000 }]);
+  const bird = scene.getFrame().birds[0];
+  assert.equal(bird.activity, 0);
+  assert.ok(bird.x > 0 && bird.x < 1200);
 });

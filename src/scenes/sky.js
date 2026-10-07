@@ -341,6 +341,7 @@ export function createSkyScene({ width = 1200, height = 800, values = PARAMS.map
     // Repacking happens only when external state changes, never while drawing.
     const old = new Map();
     for (let i = 0; i < N; i++) old.set(ids[i], [px[i], py[i], pz[i], vx[i], vy[i], vz[i]]);
+    const initialSnapshot = !externalItems;
     const now = Date.now();
     for (const [eventId, expiresAt] of seenEvents) if (expiresAt <= now) seenEvents.delete(eventId);
     const freshChanges = changes.filter(change => {
@@ -350,11 +351,12 @@ export function createSkyScene({ width = 1200, height = 800, values = PARAMS.map
       seenEvents.set(eventId, change.expiresAt);
       return true;
     });
-    const arrivals = new Set(freshChanges.filter(change => change.type === 'upsert').map(change => change.itemId));
+    const arrivals = new Set(initialSnapshot ? [] : freshChanges.filter(change => change.type === 'upsert').map(change => change.itemId));
     const selected = new Set(incomingIds.slice(0, MAX));
     externalItems = true;
     frame.total = items.length;
     N = Math.min(MAX, items.length);
+    if (N === 0) pred.on = false;
     for (let i = 0; i < N; i++) {
       const id = incomingIds[i], saved = old.get(id);
       if (saved) [px[i], py[i], pz[i], vx[i], vy[i], vz[i]] = saved;
@@ -369,7 +371,7 @@ export function createSkyScene({ width = 1200, height = 800, values = PARAMS.map
     for (const id of itemMetadata.keys()) if (!selected.has(id)) itemMetadata.delete(id);
     refreshLinks();
     project();
-    for (const change of freshChanges) {
+    for (const change of initialSnapshot ? [] : freshChanges) {
       const bird = birdCache.get(change.itemId);
       if (bird && change.type !== 'remove' && change.expiresAt > now) {
         bird.activityUntil = simTime + Math.min(2400, change.expiresAt - now);
