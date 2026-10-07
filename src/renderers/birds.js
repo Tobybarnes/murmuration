@@ -4,18 +4,34 @@ const TAU = Math.PI * 2;
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 const finite = (value, fallback = 0) => Number.isFinite(value) ? value : fallback;
 
-function perchedBird(ctx, activity) {
+function perchedBird(ctx, activity, idle = {}) {
   // Body, breast and head are one contour; the short beak breaks the silhouette.
-  const lift = activity * 0.05;
+  const breath = clamp(finite(idle?.breath), 0, 1);
+  const lean = clamp(finite(idle?.lean), -1, 1) * .12;
+  const look = clamp(finite(idle?.headTurn), -1, 1);
+  const ruffle = clamp(finite(idle?.ruffle), 0, 1);
+  const stretch = clamp(finite(idle?.wingStretch), 0, 1);
+  const tail = clamp(finite(idle?.tailFlick), -1, 1);
+  const lift = activity * .05 + breath * .025 - clamp(finite(idle?.headBob), 0, 1) * .10;
+  const headX = lean + look * .17;
+  const puff = breath * .018 + ruffle * .085;
+  // A short stretch opens one wing behind the body; both feet keep contact.
+  if (stretch > .001) {
+    ctx.beginPath();
+    ctx.moveTo(-.10, -.88);
+    ctx.bezierCurveTo(-.40, -.78, -.72 - stretch * .45, -.60 - stretch * .60, -.76 - stretch * .50, -.34 - stretch * .55);
+    ctx.bezierCurveTo(-.54 - stretch * .32, -.22 - stretch * .35, -.38, -.38, -.12, -.46);
+    ctx.closePath(); ctx.fill();
+  }
   ctx.beginPath();
   ctx.moveTo(-0.19, -0.31);
-  ctx.bezierCurveTo(-0.51, -0.45, -0.48, -0.95 - lift, -0.13, -1.07 - lift);
-  ctx.bezierCurveTo(-0.01, -1.1 - lift, 0.01, -1.31 - lift, 0.2, -1.33 - lift);
-  ctx.bezierCurveTo(0.39, -1.37 - lift, 0.51, -1.25 - lift, 0.47, -1.14 - lift);
-  ctx.lineTo(0.76, -1.08 - lift);
-  ctx.lineTo(0.43, -1.03 - lift);
-  ctx.bezierCurveTo(0.5, -0.79, 0.41, -0.44, 0.12, -0.28);
-  ctx.lineTo(-0.54, -0.08);
+  ctx.bezierCurveTo(-0.51 - puff, -0.45, -0.48 + lean - puff, -0.95 - lift, -0.13 + lean, -1.07 - lift);
+  ctx.bezierCurveTo(-0.01 + headX, -1.1 - lift, 0.01 + headX, -1.31 - lift, 0.2 + headX, -1.33 - lift);
+  ctx.bezierCurveTo(0.39 + headX, -1.37 - lift, 0.51 + headX, -1.25 - lift, 0.47 + headX, -1.14 - lift);
+  ctx.lineTo(0.76 + headX + look * .11, -1.08 - lift - look * .05);
+  ctx.lineTo(0.43 + headX, -1.03 - lift);
+  ctx.bezierCurveTo(0.5 + lean + puff, -0.79, 0.41 + puff, -0.44, 0.12, -0.28);
+  ctx.lineTo(-0.54 - tail * .10, -0.08 - tail * .18);
   ctx.lineTo(-0.4, -0.48);
   ctx.closePath();
   ctx.fill();
@@ -83,7 +99,7 @@ export function drawBird(ctx, bird, { colour = '#263b3f', alpha = 1 } = {}) {
   if (bird.pose === 'perched') {
     const facing = bird.facing === -1 ? -1 : bird.facing === 1 ? 1 : Math.cos(finite(bird.heading)) < 0 ? -1 : 1;
     ctx.scale(facing, 1);
-    perchedBird(ctx, activity);
+    perchedBird(ctx, activity, bird.idle);
   } else {
     ctx.save();
     ctx.rotate(finite(bird.heading));

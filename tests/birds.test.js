@@ -58,3 +58,21 @@ test('invalid bird geometry never reaches Canvas', () => {
     assert.equal(context.calls.length, 0);
   }
 });
+
+test('perched gestures change the silhouette while keeping every foot contact fixed', () => {
+  const bird = { x: 15, y: 25, size: 15, pose: 'perched', facing: -1 };
+  const resting = drawingContext(); drawBird(resting, bird);
+  const feet = context => context.calls.slice(context.calls.findIndex(call => call.method === 'fill') + 1)
+    .filter(call => call.method === 'moveTo' || call.method === 'lineTo').filter(call => call.args[1] === 0);
+  for (const idle of [{ headTurn: 1 }, { lean: -1, headBob: 1 }, { breath: 1, ruffle: 1 }, { wingStretch: 1 }, { tailFlick: 1 }]) {
+    const context = drawingContext(), input = { ...bird, idle }, before = structuredClone(input);
+    drawBird(context, input);
+    assert.notDeepEqual(context.calls, resting.calls);
+    assert.deepEqual(feet(context), feet(resting), 'foot lines continue touching the wire');
+    assert.deepEqual(input, before, 'drawing does not advance or mutate the gesture');
+    assert.equal(context.calls[0].method, 'save'); assert.equal(context.calls.at(-1).method, 'restore');
+  }
+  const invalid = drawingContext();
+  drawBird(invalid, { ...bird, idle: { breath: NaN, lean: Infinity, headTurn: 'bad', headBob: -Infinity, ruffle: NaN, wingStretch: Infinity, tailFlick: NaN } });
+  assert.deepEqual(invalid.calls, resting.calls, 'invalid optional motion values fall back to rest');
+});

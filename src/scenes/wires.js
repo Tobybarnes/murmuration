@@ -1,4 +1,5 @@
 import { createPerches, LANES, laneFor } from './perches.js';
+import { createPerchedIdle, samplePerchedIdle, perchedIdleFade } from './perched-idle.js';
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 const ease = value => 1 - (1 - value) ** 3;
@@ -12,11 +13,12 @@ export function createWireScene({ width = 1200, height = 800, reducedMotion = fa
   const seenChanges = new Map();
   const frame = { birds: [], geometry: LANES.map(lane => perches.wire(lane)), width, height, time: 0,
     counts: Object.fromEntries(LANES.map(lane => [lane, { total: 0, visible: 0, overflow: 0 }])) };
-  let firstSync = true, disposed = false, weather = null;
+  let firstSync = true, disposed = false, weather = null, idleTime = 0;
 
   function settle(record) {
     const target = perches.point(record.birdId);
     if (!target) return;
+    if (record.mode !== 'perched') record.perchedAt = idleTime;
     record.mode = 'perched'; record.x = target.x; record.y = target.y;
     record.vx = 0; record.vy = 0;
   }
@@ -41,6 +43,7 @@ export function createWireScene({ width = 1200, height = 800, reducedMotion = fa
         x: seed % 2 ? -55 : frame.width + 55,
         y: target.y - 100 - seed % 70,
         wingPhase: seed % 628 / 100, activityUntil: -1,
+        idle: createPerchedIdle(seed), perchedAt: idleTime,
         vx: 0, vy: 0, heading: seed % 2 ? 0 : Math.PI, view: {},
       };
       records.set(id, record);
@@ -93,6 +96,7 @@ export function createWireScene({ width = 1200, height = 800, reducedMotion = fa
   function update(dtMs, simTime = frame.time + dtMs) {
     if (disposed || !Number.isFinite(dtMs) || dtMs < 0 || !Number.isFinite(simTime)) return;
     frame.time = simTime;
+    if (!reducedMotion) idleTime += dtMs;
     const fresh = weather && Number.isFinite(weather.observedAt) && Number.isFinite(weather.expiresAt) && weather.observedAt <= now() && weather.expiresAt > now();
     const wind = fresh ? clamp(Number(weather.windKph) || 0, 0, 100) / 100 : 0;
     perches.setSway(reducedMotion ? 0 : Math.sin(frame.time * .0007 + (Number(weather?.windDirection) || 0) * Math.PI / 180) * wind * 3);
@@ -136,9 +140,11 @@ export function createWireScene({ width = 1200, height = 800, reducedMotion = fa
       const approaching = record.mode === 'approach';
       const landing = approaching && progress > .65;
       const poseProgress = perched ? 1 : landing ? (progress - .65) / .35 : record.mode === 'takeoff' ? progress : 0;
+      const idleStrength = perched && !reducedMotion ? perchedIdleFade(idleTime - record.perchedAt) : 0;
       Object.assign(record.view, {
         birdId: record.birdId, x: record.x, y: record.y - (landing ? record.size * .62 * poseProgress : 0),
         size: record.size, facing,
+        idle: samplePerchedIdle(record.idle, idleTime, idleStrength),
         heading: perched ? 0 : record.heading, vx: record.vx, vy: record.vy,
         wingPhase: record.wingPhase,
         bank: approaching ? Math.sin(progress * Math.PI) * .24 : 0,

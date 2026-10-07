@@ -148,3 +148,48 @@ test('expired or repeated activity deliveries cannot restart a settled bird resp
   scene.sync(items, [{ ...change, eventId: 'stale:1', expiresAt: now - 1 }]);
   assert.equal(bird(scene, 'agent').activity, 0);
 });
+
+test('perched birds move independently while keeping their feet, identities and item state', () => {
+  const scene = createWireScene(), control = createWireScene(), items = initialItems();
+  scene.sync(items); control.sync(items);
+  const original = new Map(scene.getFrame().birds.map(view => [view.birdId, { view, idle: view.idle, x: view.x, y: view.y }]));
+  const gestures = new Set();
+  for (let tick = 0; tick < 120; tick++) {
+    scene.update(250); control.update(250);
+    if (tick === 30) scene.sync([...items].reverse());
+    for (const view of scene.getFrame().birds) {
+      const before = original.get(view.birdId), reference = bird(control, view.birdId);
+      assert.equal(view, before.view); assert.equal(view.idle, before.idle);
+      assert.deepEqual([view.x, view.y], [before.x, before.y], 'feet stay on their existing perch');
+      assert.deepEqual(view.idle, reference.idle, 'snapshot order does not reset the gesture schedule');
+      assert.equal(view.activity, 0, 'ambient movement does not invent incoming activity');
+      for (const [key, value] of Object.entries(view.idle)) {
+        assert.ok(Number.isFinite(value) && Math.abs(value) <= 1);
+        if (key !== 'breath' && Math.abs(value) > .1) gestures.add(key);
+      }
+    }
+  }
+  assert.ok(gestures.has('headTurn') && gestures.has('ruffle') && gestures.has('wingStretch'), 'quiet gestures appear without new items');
+  assert.ok(new Set(scene.getFrame().birds.map(view => JSON.stringify(view.idle))).size > 10, 'birds use individual timing');
+  assert.deepEqual(items, initialItems());
+  const still = scene.getFrame().birds.map(view => ({ ...view.idle }));
+  scene.update(0); scene.sync(items);
+  assert.deepEqual(scene.getFrame().birds.map(view => ({ ...view.idle })), still, 'redrawing at pause does not move birds');
+  scene.dispose(); control.dispose();
+});
+
+test('ambient gestures start after landing and reduced motion keeps them neutral', () => {
+  const scene = createWireScene(); scene.sync([]); scene.sync([item('arrival')]);
+  advance(scene, 2200);
+  assert.ok(Object.values(bird(scene, 'arrival').idle).every(value => value === 0), 'flight and landing do not use perched gestures');
+  advance(scene, 2200);
+  assert.equal(bird(scene, 'arrival').pose, 'perched');
+  assert.ok(bird(scene, 'arrival').idle.breath > 0);
+  scene.setEnvironment({ reducedMotion: true });
+  advance(scene, 10_000);
+  assert.ok(Object.values(bird(scene, 'arrival').idle).every(value => value === 0));
+  scene.setEnvironment({ reducedMotion: false });
+  advance(scene, 100);
+  assert.ok(bird(scene, 'arrival').idle.breath > 0);
+  scene.dispose();
+});
