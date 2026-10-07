@@ -4,7 +4,7 @@ An ambient flocking experiment adapted from [Ben Bashford’s original](https://
 
 [Open the live visualizer](https://murmuration-sepia.vercel.app) or [browse the GitHub project](https://github.com/Tobybarnes/murmuration). Deployment and verification details are in [setup status](docs/SETUP-STATUS.md).
 
-This first version has simulated dots, connected-node drawing, sixteen controls, pointer attraction, scatter, pause, trails, a predator and optional MIDI input. Settings stay in this browser. It makes no account connections and sends no analytics.
+This first version has simulated dots, connected-node drawing, sixteen controls, pointer attraction, scatter, pause, trails and a predator. Settings stay in this browser. It makes no account connections and sends no analytics.
 
 ## Run locally
 
@@ -23,14 +23,12 @@ Choose **Tune flock** to open the sixteen sliders. Use arrow keys on a focused s
 
 Keyboard shortcuts: Space pauses, S scatters, R resets, H hides or shows the interface, and F toggles fullscreen. Reduced-motion preferences start the animation paused. Hidden tabs stop simulation work.
 
-**Connect MIDI** optionally requests browser MIDI access. Standard 16n CC32–47 map to the sixteen sliders; other CCs are learned in first-moved order. Physical MIDI needs a compatible browser and controller.
-
 ## Project layout
 
 - `src/simulation.js`: Flock movement, Canvas rendering and animation lifecycle.
 - `src/parameters.js`: Original parameter definitions and value conversion.
-- `src/main.js`: Interface, pointer/keyboard controls and MIDI connection.
-- `src/storage.js`: Local settings and MIDI mapping.
+- `src/main.js`: Interface and pointer/keyboard controls.
+- `src/storage.js`: Local settings.
 - `src/style.css`: Responsive interface and both colour themes.
 - `docs/ROADMAP.md`: Realistic birds, communication inputs and sky/wire scenes.
 

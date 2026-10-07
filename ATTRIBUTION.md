@@ -2,7 +2,7 @@
 
 The flocking simulation and dot/link drawing code in `src/simulation.js`, and the sixteen parameter definitions in `src/parameters.js`, are adapted from [Ben Bashford’s Murmuration](https://benbashford.com/experiments/murmuration/murmuration.html). The original page identifies Ben Bashford as its author. Source retrieved on 7 October 2026.
 
-The adaptation preserves the original 3D boids calculations, spatial hash, neighbour limits, perspective projection, dotted connections, predator, trails, parameter ranges and colour palettes. It extracts the engine into a module and adds a fixed simulation step, lifecycle cleanup, input validation and a responsive, keyboard-accessible interface. Original generated country labels are replaced with explicit simulation IDs. Web MIDI is enabled by a button instead of requesting access on page load. Analytics and external font requests are removed.
+The adaptation preserves the original 3D boids calculations, spatial hash, neighbour limits, perspective projection, dotted connections, predator, trails, parameter ranges and colour palettes. It extracts the engine into a module and adds a fixed simulation step, lifecycle cleanup, input validation and a responsive, keyboard-accessible interface. Original generated country labels are replaced with explicit simulation IDs. Analytics and external font requests are removed.
 
 [Voronoi Nodes](https://benbashford.com/experiments/voronoi-nodes/voronoi-nodes.html), also by Ben Bashford, was inspected as the related visual reference. Its p5.js sketch is not part of this app or its runtime dependencies.
 

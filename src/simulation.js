@@ -1,7 +1,7 @@
 // Flocking and Canvas rendering adapted from Ben Bashford's Murmuration.
 // https://benbashford.com/experiments/murmuration/murmuration.html
 // Original source retrieved 2026-10-07. See ATTRIBUTION.md for provenance.
-// The host owns UI, persistence, input and MIDI; this module owns its frame loop.
+// The host owns UI, persistence and input; this module owns its frame loop.
 import { PARAMS, resolveParameters } from './parameters.js';
 
 const STEP_MS = 1000 / 60;

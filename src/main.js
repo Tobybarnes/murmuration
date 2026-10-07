@@ -1,6 +1,6 @@
 import { PARAMS } from './parameters.js';
 import { createSimulation } from './simulation.js';
-import { FADERS_KEY, MIDI_KEY, readJSON, writeJSON, readFaders, createMidiMapping } from './storage.js';
+import { FADERS_KEY, writeJSON, readFaders } from './storage.js';
 
 const $ = (id) => document.getElementById(id);
 const canvas = $('flock');
@@ -177,36 +177,3 @@ for (const name of ['pointerup', 'pointercancel', 'lostpointercapture']) canvas.
   pointerDown = false; sim?.setPointer(event.clientX || 0, event.clientY || 0, false);
 });
 window.addEventListener('blur', () => { pointerDown = false; sim?.setPointer(0, 0, false); });
-
-const mapping = createMidiMapping(readJSON(MIDI_KEY, {}));
-let midiAccess;
-function listInputs() {
-  const names = [];
-  midiAccess.inputs.forEach(input => {
-    if (input.state !== 'connected') return;
-    names.push(input.name || 'MIDI controller');
-    input.onmidimessage = ({ data }) => {
-      const [status, cc, value] = data;
-      if ((status & 0xf0) !== 0xb0 || value === undefined) return;
-      const index = mapping.lookup(status & 0x0f, cc);
-      if (index < 0) return;
-      setParameter(index, value / 127);
-      writeJSON(MIDI_KEY, mapping.learned);
-    };
-  });
-  $('midi-status').textContent = names.length ? names.join(', ') : 'No controller found. Plug one in to connect.';
-}
-$('midi-connect').addEventListener('click', async () => {
-  if (!navigator.requestMIDIAccess) { $('midi-status').textContent = 'MIDI is unavailable in this browser. The sliders work here.'; return; }
-  $('midi-connect').disabled = true;
-  $('midi-status').textContent = 'Waiting for MIDI access…';
-  try {
-    midiAccess = await navigator.requestMIDIAccess({ sysex: false });
-    midiAccess.onstatechange = listInputs;
-    listInputs();
-    $('midi-connect').textContent = 'MIDI enabled';
-  } catch {
-    $('midi-status').textContent = 'MIDI access was not granted. You can still use the sliders.';
-    $('midi-connect').disabled = false;
-  }
-});

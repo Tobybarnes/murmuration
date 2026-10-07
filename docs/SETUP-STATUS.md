@@ -6,14 +6,14 @@ The visualizer is live at https://murmuration-sepia.vercel.app, with source at h
 
 ## Verified
 
-- All 12 unit tests pass, including finite flock state at maximum density, consistent 60/120Hz simulation, pause, hidden-tab lifecycle, cleanup, saved settings and MIDI mapping.
+- All 11 unit tests pass, including finite flock state at maximum density, consistent 60/120Hz simulation, pause, hidden-tab lifecycle, cleanup and saved settings.
 - JavaScript syntax checks and the static build pass.
 - The live canvas animates and displays the sixteen controls without captured browser warnings or errors.
 - Desktop controls, count changes, pause/resume, scatter, reset, settings persistence, and H hide/show were exercised in the browser.
 - Phone layouts at 390 × 844 and 320 × 740 were inspected; the document has no horizontal overflow. This is browser viewport testing, not physical-phone testing.
 - The original colour interpolation remains on the canvas, with a separate readable UI palette at intermediate theme values.
 
-Physical MIDI hardware has not been tested. Fullscreen was attempted in the Codex in-app browser, which did not confirm entry; verify it in a normal browser. No communication accounts are connected.
+Fullscreen was attempted in the Codex in-app browser, which did not confirm entry; verify it in a normal browser. No communication accounts are connected.
 
 ## GitHub and Vercel
 
