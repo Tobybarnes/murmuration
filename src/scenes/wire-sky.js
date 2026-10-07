@@ -2,19 +2,22 @@ import { sceneBirdId, birdVariation } from '../scene-contract.js';
 import { laneFor, LANES } from './perches.js';
 
 const TAU = Math.PI * 2, STEP = 1000 / 60, MAX_BIRDS = 2400, CELL = .22;
+// Travel has its own clock so brisk passes do not speed up wingbeats or glides.
+const FLIGHT_RATE = 3;
 const clamp = (value, low, high) => Math.max(low, Math.min(high, value));
 const validSize = value => Number.isFinite(value) && value > 0;
 
 // A compact circling flock with individual response delays and personal space.
 // This is an illustrative pigeon model, not a calibrated flight simulation.
 // Shape/circling: https://www.allaboutbirds.org/guide/Rock_Pigeon/id
+// Travel reference: https://www.youtube.com/watch?v=-rWgPueiiNo
 // Wingbeats: https://doi.org/10.1371/journal.pbio.3000299
 export function createWireSky({ width = 1200, height = 800 } = {}) {
   if (![width, height].every(validSize)) throw new TypeError('Scene dimensions must be positive numbers.');
   const frame = { birds: [], geometry: [], width, height, time: 0,
     counts: Object.fromEntries(LANES.map(lane => [lane, { total: 0, visible: 0, overflow: 0 }])) };
   const flock = new Map(), seenEvents = new Map(), grid = new Map();
-  let states = [], reducedMotion = false, disposed = false, motionTime = 0;
+  let states = [], reducedMotion = false, disposed = false, motionTime = 0, flightTime = 0;
   let environment = {}, initialized = false;
 
   // Broad circuits, slight changes in radius/altitude, a near and a receding pass.
@@ -72,7 +75,7 @@ export function createWireSky({ width = 1200, height = 800 } = {}) {
       if (!grid.has(key)) grid.set(key, []);
       grid.get(key).push(state);
     }
-    const seconds = motionTime / 1000;
+    const seconds = flightTime / 1000;
     const weather = environment.weather?.expiresAt > Date.now() ? environment.weather : null;
     const windSpeed = clamp(Number.isFinite(weather?.windKph) ? weather.windKph : 0, 0, 60) / 1000;
     // Meteorological direction names the direction wind comes FROM.
@@ -149,7 +152,7 @@ export function createWireSky({ width = 1200, height = 800 } = {}) {
         const id = sceneBirdId(item);
         let state = flock.get(id);
         if (!state) {
-          const v = variation(id), guide = route(motionTime / 1000 - v.delay), ahead = route(motionTime / 1000 - v.delay + .1);
+          const v = variation(id), guide = route(flightTime / 1000 - v.delay), ahead = route(flightTime / 1000 - v.delay + .1);
           state = { variation: v, x: guide.x + v.ox, y: guide.y + v.oy, z: guide.z + v.oz,
             vx: (ahead.x - guide.x) * 10, vy: (ahead.y - guide.y) * 10, vz: (ahead.z - guide.z) * 10,
             activityUntil: 0, view: { birdId: id, heading: 0, bank: 0 } };
@@ -171,9 +174,10 @@ export function createWireSky({ width = 1200, height = 800 } = {}) {
       if (!Number.isFinite(dtMs) || dtMs < 0 || !Number.isFinite(simTime)) throw new TypeError('Scene time must be finite milliseconds.');
       frame.time = simTime;
       if (!reducedMotion) {
-        let remaining = dtMs;
+        motionTime += dtMs;
+        let remaining = dtMs * FLIGHT_RATE;
         while (remaining > .00001) {
-          const elapsed = Math.min(STEP, remaining); motionTime += elapsed; step(elapsed / 1000); remaining -= elapsed;
+          const elapsed = Math.min(STEP, remaining); flightTime += elapsed; step(elapsed / 1000); remaining -= elapsed;
         }
       }
       project(reducedMotion ? 0 : dtMs / 1000);
