@@ -422,6 +422,7 @@ export function createSkyScene({ width = 1200, height = 800, values = PARAMS.map
     gather();
     Object.assign(pred, { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, on: false });
     simTime = 0;
+    for (const bird of birdCache.values()) { bird.activityUntil = 0; bird.bank = 0; }
     refreshLinks();
     project();
   }

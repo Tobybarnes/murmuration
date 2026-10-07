@@ -126,3 +126,21 @@ test('targetless activity animates a bounded subset without adding birds or repl
   scene.sync(items, changes);
   assert.deepEqual(active.map(bird => bird.activity), response);
 });
+
+
+test('reset clears activity deadlines when simulation time returns to zero', () => {
+  const scene = createSkyScene();
+  const items = [{ itemId: 'email/active' }];
+  scene.sync(items);
+  scene.update(STEP, 60000);
+  const changes = [{ eventId: 'activity/late', itemId: 'email/active', type: 'activity', expiresAt: Date.now() + 10000 }];
+  scene.sync(items, changes);
+  assert.equal(scene.getFrame().birds[0].activity, 1);
+  scene.reset();
+  assert.equal(scene.getFrame().time, 0);
+  assert.equal(scene.getFrame().birds[0].activity, 0);
+  assert.equal(scene.getFrame().birds[0].activityUntil, 0);
+  // Reset must not let the next repeated input snapshot replay that event.
+  scene.sync(items, changes);
+  assert.equal(scene.getFrame().birds[0].activity, 0);
+});
