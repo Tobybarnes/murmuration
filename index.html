@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#153243">
+  <meta name="description" content="An ambient flocking experiment. Explore a living cloud of dots with sixteen controls for movement, connections and light.">
+  <title>Murmuration</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/src/style.css">
+  <script type="module" src="/src/main.js"></script>
+</head>
+<body>
+  <main aria-label="Murmuration visualizer">
+    <canvas id="flock" aria-label="Animated flock of simulated dots. Hold a pointer on the canvas to attract them."></canvas>
+    <header class="top interface">
+      <div class="identity">
+        <span class="eyebrow">Flocking study <span class="edition">/ 001</span></span>
+        <h1>Murmuration<span class="title-dot">.</span></h1>
+        <p>An ambient flocking experiment.</p>
+      </div>
+      <div class="toolbar" aria-label="Playback controls">
+        <button id="pause" type="button" aria-pressed="false" title="Pause animation (Space)">Pause</button>
+        <button id="scatter" type="button" title="Scatter the flock (S)">Scatter</button>
+        <button id="fullscreen" class="icon-button" type="button" aria-label="Enter fullscreen" title="Fullscreen (F)">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/></svg>
+        </button>
+        <button id="hide" class="icon-button" type="button" aria-label="Hide interface" title="Hide interface (H)">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12s3-6 9-6 9 6 9 6-3 6-9 6-9-6-9-6Z"/><circle cx="12" cy="12" r="2.5"/><path d="m3 3 18 18"/></svg>
+        </button>
+      </div>
+    </header>
+    <div class="bottom interface">
+      <div class="observation">
+        <div class="flock-status"><span class="status-dot" aria-hidden="true"></span><span><strong id="count">456</strong> simulated birds</span><span class="divider">/</span><span id="play-state">In flight</span></div>
+        <div class="scene-actions">
+          <span class="pointer-hint">Hold anywhere to draw the flock closer</span>
+          <button id="settings-toggle" type="button" aria-expanded="false" aria-controls="settings">Tune flock <span aria-hidden="true">+</span></button>
+        </div>
+      </div>
+      <section id="settings" class="settings" aria-label="Flock settings" hidden>
+        <div class="settings-heading"><h2>Flock settings</h2><div><button id="reset" type="button" title="Reset all sixteen controls (R)">Reset</button><button id="settings-close" class="icon-button" aria-label="Close settings" type="button">×</button></div></div>
+        <div id="faders" class="faders"></div>
+        <div class="settings-foot"><div class="midi-controls"><button id="midi-connect" type="button">Connect MIDI</button><span id="midi-status" role="status">Optional · 16n compatible</span></div><span class="key-hints">Space pause · S scatter · R reset · H hide · F fullscreen</span></div>
+      </section>
+      <footer><span>Adapted from <a href="https://benbashford.com/experiments/murmuration/murmuration.html" target="_blank" rel="noopener noreferrer">Ben Bashford’s experiment <span aria-hidden="true">↗</span></a></span><span class="footer-right"><span id="fps" aria-label="Frames per second">— fps</span><span class="source-label">Local simulation · no accounts connected</span></span></footer>
+    </div>
+    <button id="show" type="button" hidden>Show interface <span aria-hidden="true">↗</span></button>
+    <p id="notice" class="notice" role="status" aria-live="polite"></p>
+    <div id="error" class="error" role="alert" hidden></div>
+    <noscript><p class="error">Enable JavaScript to run the flock simulation.</p></noscript>
+  </main>
+</body>
+</html>
