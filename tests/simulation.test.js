@@ -21,6 +21,9 @@ function withBrowser(run) {
   const context = {
     setTransform() {}, fillRect() {}, setLineDash() {}, beginPath() {},
     moveTo() {}, lineTo() {}, stroke() {}, fill() {},
+    save() {}, restore() {}, translate() {}, scale() {}, rotate() {}, closePath() {},
+    bezierCurveTo() {}, quadraticCurveTo() {}, ellipse() {},
+    createLinearGradient() { return { addColorStop() {} }; },
     arc(x, y, radius) {
       assert.ok([x, y, radius].every(Number.isFinite), 'Canvas received a non-finite point');
       assert.ok(radius >= 0, 'Canvas received a negative radius');
@@ -245,5 +248,47 @@ test('missing Canvas 2D support fails explicitly before allocating browser resou
     assert.equal(scheduled.size, 0);
     assert.equal(getEventListeners(window, 'resize').length, 0);
     assert.equal(getEventListeners(document, 'visibilitychange').length, 0);
+  });
+});
+
+
+test('switching between birds and dots preserves motion and freezes wingbeats during pause', () => {
+  withBrowser(({ canvas, advance }) => {
+    const simulation = createSimulation(canvas);
+    advance(10);
+    simulation.setPaused(true);
+    const before = simulation.getState();
+    const bird = { ...simulation.getFrame().birds[0] };
+    simulation.setAppearance('birds');
+    simulation.setOverlays(true);
+    advance(30);
+    assert.deepEqual(simulation.getState().positions, before.positions);
+    assert.equal(simulation.getFrame().birds[0].wingPhase, bird.wingPhase);
+    assert.equal(simulation.getState().appearance, 'birds');
+    simulation.setAppearance('dots');
+    advance(2);
+    assert.deepEqual(simulation.getState().velocities, before.velocities);
+    assert.throws(() => simulation.setAppearance('invalid'));
+    simulation.setPaused(false);
+    advance(2);
+    assert.notEqual(simulation.getFrame().birds[0].wingPhase, bird.wingPhase);
+    simulation.destroy();
+  });
+});
+
+test('the host accepts exact external item counts independent of density controls', () => {
+  withBrowser(({ canvas, advance }) => {
+    const simulation = createSimulation(canvas);
+    simulation.sync([]);
+    simulation.setParameter(0, 1);
+    simulation.setParameter(12, 1);
+    advance(60);
+    assert.equal(simulation.getState().count, 0);
+    assert.equal(simulation.getState().finite, true);
+    simulation.sync([{ itemId: 'gmail/1' }]);
+    advance(3);
+    assert.equal(simulation.getState().count, 1);
+    assert.equal(simulation.getFrame().birds[0].birdId, 'gmail/1');
+    simulation.destroy();
   });
 });
