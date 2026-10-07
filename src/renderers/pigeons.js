@@ -80,10 +80,12 @@ export function drawPigeon(ctx, bird, { colour = '#364743', alpha = 1 } = {}) {
   const cycle = ((phase / TAU) % 1 + 1) % 1;
   // The recovery/upstroke occupies a shorter part of each wingbeat.
   const stroke = cycle < 0.64 ? Math.cos(cycle / 0.64 * Math.PI) : -Math.cos((cycle - 0.64) / 0.36 * Math.PI);
-  const gliding = bird.pose === 'gliding';
+  const activity = clamp(finite(bird.activity), 0, 1);
+  // Replies briefly resume flapping, then settle back into the scene's glide.
+  const gliding = bird.pose === 'gliding' && activity <= 0.05;
   const progress = clamp(finite(bird.poseProgress, 0.5), 0, 1);
   const flare = bird.pose === 'landing' ? 0.15 + progress * 0.25 : bird.pose === 'takeoff' ? (1 - progress) * 0.24 : 0;
-  const reach = (gliding ? 1.3 : 0.99 + stroke * 0.46) + flare;
+  const reach = (gliding ? 1.3 : 0.99 + stroke * 0.46) + flare + activity * 0.13;
   const sweep = gliding ? -0.21 : -0.22 - Math.sin(cycle * TAU) * 0.16;
   const detail = clamp((bird.size - 5) / 4, 0, 1);
 

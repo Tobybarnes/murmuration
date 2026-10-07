@@ -80,3 +80,22 @@ test('invalid projected geometry is rejected and optional non-finite fields are 
   assert.equal(drawPigeon(ctx, { ...bird, heading: NaN, wingPhase: Infinity, bank: -Infinity }, { alpha: NaN }), true);
   assert.deepEqual(ctx.snapshot(), before);
 });
+
+
+test('activity briefly resumes wingbeats and adds a restrained stroke without mutating the frame', () => {
+  const draw = (pose, activity, wingPhase = 0) => {
+    const input = Object.freeze({ ...bird, pose, activity, wingPhase });
+    const beforeInput = { ...input };
+    const ctx = drawingContext(), beforeContext = ctx.snapshot();
+    drawPigeon(ctx, input);
+    assert.deepEqual(input, beforeInput);
+    assert.deepEqual(ctx.snapshot(), beforeContext);
+    assert.equal(ctx.stackSize(), 0);
+    return geometry(ctx);
+  };
+  assert.notDeepEqual(draw('flying', 0), draw('flying', 1));
+  assert.notDeepEqual(draw('gliding', 0.6, 0), draw('gliding', 0.6, Math.PI));
+  assert.deepEqual(draw('gliding', 0, 0), draw('gliding', 0, Math.PI));
+  assert.deepEqual(draw('flying', 1), draw('flying', 100));
+  assert.deepEqual(draw('flying', 0), draw('flying', NaN));
+});
