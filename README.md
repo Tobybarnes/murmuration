@@ -2,6 +2,8 @@
 
 An ambient flocking experiment adapted from [Ben Bashford’s original](https://benbashford.com/experiments/murmuration/murmuration.html). It uses plain JavaScript and Canvas 2D, with 3D flock movement projected onto the screen. See [source attribution](ATTRIBUTION.md).
 
+[Open the live visualizer](https://murmuration-sepia.vercel.app). Deployment and verification details are in [setup status](docs/SETUP-STATUS.md).
+
 This first version has simulated dots, connected-node drawing, sixteen controls, pointer attraction, scatter, pause, trails, a predator and optional MIDI input. Settings stay in this browser. It makes no account connections and sends no analytics.
 
 ## Run locally
@@ -32,4 +34,4 @@ Keyboard shortcuts: Space pauses, S scatters, R resets, H hides or shows the int
 - `src/style.css`: Responsive interface and both colour themes.
 - `docs/ROADMAP.md`: Realistic birds, communication inputs and sky/wire scenes.
 
-Vercel builds with `npm run build` and serves `dist/`; the Git connection deploys the `main` branch. GitHub Actions runs the syntax checks, unit tests and build independently. Changes to preview branches get Vercel previews. Future private-data adapters must add authentication and server-side storage before real accounts are connected.
+Vercel builds with `npm run build` and serves `dist/`. The current production deployment was published from the CLI. GitHub repository creation and the Vercel Git connection are pending because GitHub returned HTTP 500 during setup. Once connected, `main` should deploy to production and other branches should get previews. The included GitHub Actions workflow runs syntax checks, unit tests and the build. Future private-data adapters must add authentication and server-side storage before real accounts are connected.
