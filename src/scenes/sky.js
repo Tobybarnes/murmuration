@@ -181,7 +181,7 @@ export function createSkyScene({ width = 1200, height = 800, values = PARAMS.map
       }
 
       let fx = 0, fy = 0, fz = 0;
-      if (wind > 0) { fx = Math.sin(windAngle) * wind; fy = -Math.cos(windAngle) * wind; }
+      if (wind > 0) { fx = -Math.sin(windAngle) * wind; fy = Math.cos(windAngle) * wind; }
       if (n > 0) {
         fx += (aliX / n - vx[i]) * wAli; fy += (aliY / n - vy[i]) * wAli; fz += (aliZ / n - vz[i]) * wAli;
         fx += cohX / n * wCoh;            fy += cohY / n * wCoh;            fz += cohZ / n * wCoh;
@@ -290,17 +290,17 @@ export function createSkyScene({ width = 1200, height = 800, values = PARAMS.map
       if (dtMs > 0) {
         const turn = Math.atan2(Math.sin(heading - bird.heading), Math.cos(heading - bird.heading));
         bird.bank += (clamp(turn * 9, -0.85, 0.85) - bird.bank) * Math.min(1, dtMs / 120);
-        bird.heading = heading;
       }
+      bird.heading = heading;
       const seconds = simTime / 1000;
+      bird.activity = clamp((bird.activityUntil - simTime) / 2400, 0, 1);
       bird.x = sx[i]; bird.y = sy[i]; bird.z = pz[i];
-      bird.radius = sr[i]; bird.size = P.size * 0.64 * perspective * bird.variation.scale;
+      bird.radius = sr[i]; bird.size = P.size * 0.64 * perspective * bird.variation.scale * (1 + bird.activity * 0.08);
       bird.vx = vx[i]; bird.vy = vy[i]; bird.vz = vz[i];
-      bird.wingPhase = seconds * TAU * bird.variation.frequency + bird.variation.phase;
-      bird.pose = Math.sin(seconds * 0.63 + bird.variation.glideOffset) > 0.84 ? 'gliding' : 'flying';
+      bird.wingPhase = seconds * TAU * bird.variation.frequency + bird.variation.phase + Math.sin(bird.activity * Math.PI) * 0.9;
+      bird.pose = bird.activity === 0 && Math.sin(seconds * 0.63 + bird.variation.glideOffset) > 0.84 ? 'gliding' : 'flying';
       bird.linked = linked[i];
       bird.readState = itemMetadata.get(id)?.readState || 'unknown';
-      bird.activity = clamp((bird.activityUntil - simTime) / 2400, 0, 1);
       bird.alpha = clamp(0.84 + (perspective - 1) * 0.6, 0.5, 1);
       frame.birds[i] = bird;
     }
