@@ -1,6 +1,14 @@
 # Bird rendering branch
 
-Branch: `feature/realistic-birds`. Based on the live dot visualizer at `bb0cf87`. This brief describes planned work; creating the branch does not implement it.
+Branch: `feature/realistic-birds`. Based on the live dot visualizer at `bb0cf87`.
+
+The first implementation is complete. Birds now have tapered wings, a body and tail, individual wingbeats, gliding intervals, banking and perspective. The Birds / Dots switch changes appearance while the flock keeps moving. Connections and labels are optional. The view opens against a light sky and respects saved settings and reduced motion.
+
+Movement lives in `src/scenes/sky.js`; `src/renderers/canvas.js` reads its cached frame; `src/renderers/birds.js` draws the shared flying, gliding, landing, perched and takeoff poses. The existing host still owns fixed ticks, pause, visibility and cleanup. Input snapshots preserve canonical IDs and surviving positions, accept empty and single-item flocks, and deduplicate activity events. Fresh weather adds bounded wind, and listening adds a small speed change.
+
+`npm run check`, `npm test` and `npm run build` pass. Tests compare seeded positions and velocities with the original engine at frames 0, 60 and 120, and cover identity, empty snapshots, event replay, finite geometry and paused wingbeats. The performance targets below still need measurements on representative desktop and phone hardware. Species-specific anatomy and feather detail remain future work.
+
+## Original implementation brief
 
 Make the existing flock look like birds while preserving the movement that already works. The first deliverable is a switch between the current dots and small directional silhouettes in the sky scene. Keep Ben Bashford’s attribution and the existing separation, alignment, cohesion, spatial hash, fixed timestep, pause and behaviour when the tab is hidden.
 

@@ -1,11 +1,17 @@
 import { PARAMS } from './parameters.js';
 import { createSimulation } from './simulation.js';
-import { FADERS_KEY, writeJSON, readFaders } from './storage.js';
+import { FADERS_KEY, writeJSON, readFaders, readJSON } from './storage.js';
 
 const $ = (id) => document.getElementById(id);
 const canvas = $('flock');
 const defaults = PARAMS.map(p => p.def);
-let values = readFaders(defaults);
+// The bird study opens against a light sky; saved flock controls still win.
+const openingValues = [...defaults];
+openingValues[15] = 1;
+let values = readFaders(openingValues);
+const APPEARANCE_KEY = 'murmuration.v1.appearance';
+let appearance = readJSON(APPEARANCE_KEY, 'birds') === 'dots' ? 'dots' : 'birds';
+let overlays = appearance === 'dots';
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 let paused = reducedMotion.matches;
 let sim;
@@ -22,7 +28,8 @@ const controls = PARAMS.map((parameter, index) => {
   input.id = `fader-${parameter.key}`;
   input.setAttribute('aria-orientation', 'vertical');
   const label = document.createElement('label');
-  label.htmlFor = input.id; label.textContent = parameter.label;
+  label.htmlFor = input.id;
+  label.textContent = parameter.key === 'count' ? 'Flock' : parameter.key === 'size' ? 'Bird size' : parameter.label;
   const output = document.createElement('output');
   output.htmlFor = input.id;
   output.setAttribute('aria-hidden', 'true');
@@ -30,7 +37,7 @@ const controls = PARAMS.map((parameter, index) => {
   input.addEventListener('dblclick', () => setParameter(index, parameter.def));
   fader.append(number, input, label, output);
   $('faders').append(fader);
-  return { input, output };
+  return { input, output, label };
 });
 
 function luminance(color) {
@@ -86,6 +93,24 @@ function setPaused(next) {
   $('play-state').textContent = paused ? 'At rest' : 'In flight';
   document.body.classList.toggle('paused', paused);
 }
+function setAppearance(next) {
+  appearance = next;
+  overlays = appearance === 'dots';
+  sim?.setAppearance(appearance);
+  writeJSON(APPEARANCE_KEY, appearance);
+  syncAppearance();
+}
+function syncAppearance() {
+  document.body.dataset.appearance = appearance;
+  canvas.dataset.appearance = appearance;
+  canvas.setAttribute('aria-label', `Animated flock of simulated ${appearance === 'birds' ? 'birds' : 'dots'}. Hold a pointer on the canvas to attract them.`);
+  $('view-birds').setAttribute('aria-pressed', String(appearance === 'birds'));
+  $('view-dots').setAttribute('aria-pressed', String(appearance === 'dots'));
+  $('study-note').textContent = appearance === 'birds' ? 'Wingbeats, glides and turns in open sky.' : 'The original flock, drawn as connected dots.';
+  $('overlays').setAttribute('aria-pressed', String(overlays));
+  $('overlays').textContent = overlays ? 'Connections on' : 'Connections off';
+  controls[9].label.textContent = appearance === 'birds' ? 'Bird size' : 'Dot size';
+}
 function toggleSettings(open = $('settings').hidden) {
   $('settings').hidden = !open;
   $('settings-toggle').setAttribute('aria-expanded', String(open));
@@ -115,7 +140,7 @@ function reset() {
 syncControls();
 try {
   sim = createSimulation(canvas, {
-    values, paused,
+    values, paused, appearance,
     onStats({ count, fps }) {
       $('count').textContent = count.toLocaleString('en-US');
       $('fps').textContent = `${Math.round(fps)} fps`;
@@ -138,9 +163,17 @@ try {
   console.error(error);
 }
 setPaused(paused);
+syncAppearance();
 if (paused) notice('Motion is paused to match your device settings. Resume when you’re ready.');
 reducedMotion.addEventListener('change', event => { if (event.matches) setPaused(true); });
 
+$('view-birds').addEventListener('click', () => setAppearance('birds'));
+$('view-dots').addEventListener('click', () => setAppearance('dots'));
+$('overlays').addEventListener('click', () => {
+  overlays = !overlays;
+  sim?.setOverlays(overlays);
+  syncAppearance();
+});
 $('pause').addEventListener('click', () => setPaused(!paused));
 $('scatter').addEventListener('click', () => { sim?.scatter(); notice('Flock scattered.'); });
 $('reset').addEventListener('click', reset);

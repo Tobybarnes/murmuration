@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#153243">
-  <meta name="description" content="An ambient flocking experiment. Explore a living cloud of dots with sixteen controls for movement, connections and light.">
+  <meta name="description" content="An ambient flocking experiment. Watch a flock of birds bank, glide and wheel through the sky. Switch to the original dots and tune the movement.">
   <title>Murmuration</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/src/style.css">
@@ -12,12 +12,16 @@
 </head>
 <body>
   <main aria-label="Murmuration visualizer">
-    <canvas id="flock" aria-label="Animated flock of simulated dots. Hold a pointer on the canvas to attract them."></canvas>
+    <canvas id="flock" aria-label="Animated flock of simulated birds. Hold a pointer on the canvas to attract them."></canvas>
     <header class="top interface">
       <div class="identity">
-        <span class="eyebrow">Flocking study <span class="edition">/ 001</span></span>
+        <span class="eyebrow">Sky study <span class="edition">/ 002</span></span>
         <h1>Murmuration<span class="title-dot">.</span></h1>
-        <p>An ambient flocking experiment.</p>
+        <p id="study-note">Wingbeats, glides and turns in open sky.</p>
+        <div class="appearance" role="group" aria-label="Flock appearance">
+          <button id="view-birds" type="button" aria-pressed="true">Birds</button>
+          <button id="view-dots" type="button" aria-pressed="false">Dots</button>
+        </div>
       </div>
       <div class="toolbar" aria-label="Playback controls">
         <button id="pause" type="button" aria-pressed="false" title="Pause animation (Space)">Pause</button>
@@ -40,6 +44,7 @@
       </div>
       <section id="settings" class="settings" aria-label="Flock settings" hidden>
         <div class="settings-heading"><h2>Flock settings</h2><div><button id="reset" type="button" title="Reset all sixteen controls (R)">Reset</button><button id="settings-close" class="icon-button" aria-label="Close settings" type="button">×</button></div></div>
+        <div class="drawing-options"><span>Drawing</span><button id="overlays" type="button" aria-pressed="false">Connections off</button><span class="drawing-hint">Links and labels reveal the flock’s structure.</span></div>
         <div id="faders" class="faders"></div>
         <div class="settings-foot"><span class="key-hints">Space pause · S scatter · R reset · H hide · F fullscreen</span></div>
       </section>

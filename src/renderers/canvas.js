@@ -3,6 +3,19 @@ import { drawBird } from './birds.js';
 const TAU = Math.PI * 2;
 const rgb = (c, a = 1) => a >= 1 ? `rgb(${c[0]},${c[1]},${c[2]})` : `rgba(${c[0]},${c[1]},${c[2]},${a})`;
 
+function luminance(colour) {
+  const channels = colour.map(channel => {
+    const value = channel / 255;
+    return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+  });
+  return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
+}
+function birdColour(colours) {
+  const background = luminance(colours.bg), foreground = luminance(colours.fg);
+  const contrast = (Math.max(background, foreground) + 0.05) / (Math.min(background, foreground) + 0.05);
+  return contrast >= 3 ? rgb(colours.fg) : background > 0.22 ? 'rgb(32,41,44)' : 'rgb(223,228,224)';
+}
+
 // Read the scene's reusable projection directly. Rendering never updates time,
 // position, identity or wing phase, including when a paused view is redrawn.
 export function createCanvasRenderer(ctx) {
@@ -52,7 +65,8 @@ export function createCanvasRenderer(ctx) {
 
     if (appearance === 'birds') {
       // Alpha follows depth. Reusing scene order avoids a sort/copy per frame.
-      for (const bird of birds) drawBird(ctx, bird, { colour: rgb(C.fg), alpha: bird.alpha });
+      const colour = birdColour(C);
+      for (const bird of birds) drawBird(ctx, bird, { colour, alpha: bird.alpha });
     } else {
       ctx.lineWidth = 1;
       ctx.fillStyle = rgb(C.bg);

@@ -68,3 +68,20 @@ body.interface-hidden .interface { opacity:0; transform:translateY(-8px); pointe
 
 @media(max-width:600px) { .toolbar { display:grid; grid-template-columns:44px 44px; } .toolbar #pause { grid-column:1 / -1; margin-right:0; } .toolbar #scatter { position:static; grid-column:1 / -1; order:5; } .toolbar #fullscreen { display:inline-flex; } }
 @media(max-width:340px) { h1 { font-size:30px; } .identity p { font-size:9px; } }
+
+/* A quiet field study: the birds occupy the page, controls sit at its edges. */
+.appearance { display:inline-flex; gap:2px; padding:3px; margin-top:20px; pointer-events:auto; border-radius:8px; background:color-mix(in srgb,var(--bg) 90%,var(--fg)); box-shadow:0 0 0 1px color-mix(in srgb,var(--fg) 13%,transparent); }
+.appearance button { min-width:68px; padding-inline:18px; border-radius:5px; color:var(--muted); }
+.appearance button[aria-pressed="true"] { background:var(--fg); color:var(--bg); box-shadow:0 1px 3px #00000010; }
+.drawing-options { display:flex; align-items:center; flex-wrap:wrap; gap:14px; padding:4px 0 16px; font-size:11px; }
+.drawing-options>span:first-child { color:var(--muted); }
+.drawing-options button { padding-inline:13px; box-shadow:0 0 0 1px color-mix(in srgb,var(--fg) 20%,transparent); }
+.drawing-options button[aria-pressed="true"] { background:color-mix(in srgb,var(--accent) 13%,transparent); }
+.drawing-hint { color:var(--muted); }
+@media(max-width:600px) {
+  .appearance { margin-top:17px; }
+  .appearance button { min-width:60px; padding-inline:12px; }
+  .identity p { max-width:26ch; line-height:1.6; }
+  .drawing-options { gap:10px; padding-bottom:14px; }
+  .drawing-hint { flex-basis:100%; }
+}
