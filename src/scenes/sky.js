@@ -295,7 +295,7 @@ export function createSkyScene({ width = 1200, height = 800, values = PARAMS.map
       const seconds = simTime / 1000;
       bird.activity = clamp((bird.activityUntil - simTime) / 2400, 0, 1);
       bird.x = sx[i]; bird.y = sy[i]; bird.z = pz[i];
-      bird.radius = sr[i]; bird.size = P.size * 0.64 * perspective * bird.variation.scale * (1 + bird.activity * 0.08);
+      bird.radius = sr[i] * (1 + bird.activity * 0.35); bird.size = P.size * 0.64 * perspective * bird.variation.scale * (1 + bird.activity * 0.08);
       bird.vx = vx[i]; bird.vy = vy[i]; bird.vz = vz[i];
       bird.wingPhase = seconds * TAU * bird.variation.frequency + bird.variation.phase + Math.sin(bird.activity * Math.PI) * 0.9;
       bird.pose = bird.activity === 0 && Math.sin(seconds * 0.63 + bird.variation.glideOffset) > 0.84 ? 'gliding' : 'flying';
@@ -372,9 +372,17 @@ export function createSkyScene({ width = 1200, height = 800, values = PARAMS.map
     refreshLinks();
     project();
     for (const change of initialSnapshot ? [] : freshChanges) {
+      const responseUntil = simTime + Math.min(2400, change.expiresAt - now);
       const bird = birdCache.get(change.itemId);
-      if (bird && change.type !== 'remove' && change.expiresAt > now) {
-        bird.activityUntil = simTime + Math.min(2400, change.expiresAt - now);
+      if (bird && change.type !== 'remove') bird.activityUntil = responseUntil;
+      else if (change.type === 'activity' && !change.itemId && N > 0) {
+        // A listening event can stir a few existing birds without inventing an
+        // item or increasing the flock. Event identity fixes the chosen subset.
+        const offset = Math.floor(birdVariation(change.eventId || change.sourceId || 'activity').phase / TAU * N) % N;
+        const stride = Math.max(1, Math.floor(N / 7));
+        for (let i = 0; i < Math.min(7, N); i++) {
+          birdCache.get(ids[(offset + i * stride) % N]).activityUntil = responseUntil;
+        }
       }
     }
     project();
