@@ -4,6 +4,9 @@ import { laneFor, LANES } from './perches.js';
 const TAU = Math.PI * 2, STEP = 1000 / 60, MAX_BIRDS = 2400, CELL = .22;
 // Travel has its own clock so brisk passes do not speed up wingbeats or glides.
 const FLIGHT_RATE = 3;
+// Project the circuit roughly 15% past the left and right viewport edges.
+// The canvas clips passing birds; their flight and item identities continue.
+const HORIZONTAL_REACH = .75;
 const clamp = (value, low, high) => Math.max(low, Math.min(high, value));
 const validSize = value => Number.isFinite(value) && value > 0;
 
@@ -40,7 +43,7 @@ export function createWireSky({ width = 1200, height = 800 } = {}) {
     const bottom = height - (width < 640 ? 310 : 235);
     const availableHeight = Math.max(120, bottom - top);
     const perspective = 1 / (1 + y * .32);
-    return { x: width / 2 + x * Math.max(60, width * .39) * perspective,
+    return { x: width / 2 + x * Math.max(60, width * HORIZONTAL_REACH) * perspective,
       y: top + availableHeight / 2 + (y * .34 - z * .86) * availableHeight,
       perspective };
   }

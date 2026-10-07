@@ -6,16 +6,20 @@ const STEP = 1000 / 60;
 const advance = (scene, frames) => { for (let i = 0; i < frames; i++) scene.update(STEP); };
 const positions = scene => new Map(scene.getFrame().birds.map(bird => [bird.birdId, { ...bird }]));
 
-// These are visible-behaviour bounds: a flock stays together, moves across the
-// sky, has no teleports, and fits between the title and controls on each device.
-test('pigeons circle as a coherent flock and stay in the usable sky on desktop and phone', () => {
+// The circuit extends beyond the window, while keeping the flock coherent
+// and its vertical flight between the title and controls on each device.
+test('pigeons pass beyond both viewport edges and return as the same coherent flock', () => {
   for (const [width, height] of [[1200, 800], [390, 844], [844, 660]]) {
     const scene = createWireSky({ width, height }); scene.sync(initialItems());
     let previous = positions(scene), left = Infinity, right = -Infinity;
     let previousCentre = null, distanceTravelled = 0;
+    const departedLeft = new Set(), departedRight = new Set(), returnedLeft = new Set(), returnedRight = new Set();
+    const ids = [...previous.keys()].sort();
     for (let tick = 0; tick < 2400; tick++) {
       scene.update(STEP);
       const birds = scene.getFrame().birds;
+      assert.deepEqual(birds.map(bird => bird.birdId).sort(), ids, 'offscreen birds keep representing the same items');
+      assert.equal(Object.values(scene.getFrame().counts).reduce((sum, count) => sum + count.visible, 0), ids.length);
       const cx = birds.reduce((sum, bird) => sum + bird.x, 0) / birds.length;
       const cy = birds.reduce((sum, bird) => sum + bird.y, 0) / birds.length;
       if (previousCentre) distanceTravelled += Math.hypot(cx - previousCentre.x, cy - previousCentre.y);
@@ -26,16 +30,23 @@ test('pigeons circle as a coherent flock and stay in the usable sky on desktop a
       assert.ok(alignment > .75, 'birds follow a common heading instead of swirling independently');
       for (const bird of birds) {
         assert.ok([bird.x, bird.y, bird.heading, bird.size, bird.wingPhase, bird.bank].every(Number.isFinite));
-        assert.ok(bird.x > bird.size * 2 && bird.x < width - bird.size * 2);
+        assert.ok(bird.x > -width * .2 && bird.x < width * 1.2, 'flight extends at most about 20% beyond each edge');
+        if (bird.x < -bird.size * 2) departedLeft.add(bird.birdId);
+        if (bird.x > width + bird.size * 2) departedRight.add(bird.birdId);
+        if (bird.x > bird.size * 2 && bird.x < width - bird.size * 2) {
+          if (departedLeft.has(bird.birdId)) returnedLeft.add(bird.birdId);
+          if (departedRight.has(bird.birdId)) returnedRight.add(bird.birdId);
+        }
         assert.ok(bird.y > 205 && bird.y < height - (width < 640 ? 310 : 235));
-        assert.ok(Math.hypot(bird.x - cx, bird.y - cy) < width * .2, 'flock stays compact');
+        assert.ok(Math.hypot(bird.x - cx, bird.y - cy) < width * .3, 'flock stays compact');
         const before = previous.get(bird.birdId);
-        assert.ok(Math.hypot(bird.x - before.x, bird.y - before.y) < width * .006, 'flight remains continuous');
+        assert.ok(Math.hypot(bird.x - before.x, bird.y - before.y) < width * .011, 'flight remains continuous');
       }
       previous = positions(scene);
     }
-    assert.ok(right - left > width * .4, 'flock makes a circuit across the scene');
+    assert.ok(right - left > width, 'flock makes a circuit wider than the window');
     assert.ok(distanceTravelled > width * 4.4, 'flock travels briskly through several circuits in forty seconds');
+    assert.ok(returnedLeft.size > 0 && returnedRight.size > 0, 'fully offscreen birds return from both sides');
     scene.dispose();
   }
 });
