@@ -12,20 +12,21 @@ export function createCanvasRenderer(ctx) {
     const birds = frame.birds;
     const links = frame.geometry.find(item => item.type === 'links');
     const predator = frame.geometry.find(item => item.type === 'predator');
+    const weather = frame.environment?.weather;
+    const freshWeather = weather?.expiresAt > Date.now() ? weather : null;
+    const background = C.bg;
     const trail = previousAppearance === appearance ? P.trails : 0;
     previousAppearance = appearance;
     ctx.globalAlpha = 1;
-    ctx.fillStyle = rgb(C.bg, trail > 0.005 ? 1 - trail : 1);
+    ctx.fillStyle = rgb(background, trail > 0.005 ? 1 - trail : 1);
     ctx.fillRect(0, 0, frame.width, frame.height);
 
-    if (appearance === 'birds' && trail < 0.005) {
-      const weather = frame.environment?.weather;
-      const freshWeather = weather?.expiresAt > Date.now() ? weather : null;
+    if ((appearance === 'birds' || freshWeather) && trail < 0.005) {
       const haze = freshWeather?.cloudCover ?? 0.28;
       const sky = ctx.createLinearGradient(0, 0, 0, frame.height);
       sky.addColorStop(0, rgb(C.hover, 0.07 + haze * 0.07));
-      sky.addColorStop(0.56, rgb(C.bg, 0));
-      sky.addColorStop(1, rgb(C.accent, 0.08));
+      sky.addColorStop(0.56, rgb(background, 0));
+      sky.addColorStop(1, rgb(freshWeather?.isDay === false ? C.hover : C.accent, 0.08));
       ctx.fillStyle = sky;
       ctx.fillRect(0, 0, frame.width, frame.height);
     }
@@ -55,7 +56,7 @@ export function createCanvasRenderer(ctx) {
       for (const bird of birds) drawBird(ctx, bird, { colour: rgb(C.fg), alpha: bird.alpha });
     } else {
       ctx.lineWidth = 1;
-      ctx.fillStyle = rgb(C.bg);
+      ctx.fillStyle = rgb(background);
       for (let pass = 0; pass < 2; pass++) {
         ctx.strokeStyle = rgb(pass ? C.accent : C.hover);
         ctx.beginPath();
@@ -67,6 +68,16 @@ export function createCanvasRenderer(ctx) {
         if (P.size > 2.5) ctx.fill();
         ctx.stroke();
       }
+      // Unread metadata remains legible after the arrival/read pulse has ended.
+      ctx.fillStyle = rgb(C.accent, 0.7);
+      ctx.beginPath();
+      for (const bird of birds) {
+        if (bird.readState !== 'unread') continue;
+        const core = Math.max(0.7, bird.radius * 0.3);
+        ctx.moveTo(bird.x + core, bird.y);
+        ctx.arc(bird.x, bird.y, core, 0, TAU);
+      }
+      ctx.fill();
     }
 
     const labelCount = labels ? Math.min(birds.length, Math.round(P.labels * Math.min(birds.length, 300))) : 0;

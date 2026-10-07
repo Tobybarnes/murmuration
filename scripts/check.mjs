@@ -18,11 +18,11 @@ async function checkDirectory(directory) {
     checked++;
   }
 }
-for (const dir of ['src', 'scripts', 'tests', 'api']) {
+for (const dir of ['src', 'scripts', 'tests', 'api', 'server']) {
   try {
     await checkDirectory(new URL(`../${dir}/`, import.meta.url));
   } catch (error) {
-    if (error.code !== 'ENOENT' || dir !== 'api') throw error;
+    if (error.code !== 'ENOENT' || !['api', 'server'].includes(dir)) throw error;
   }
 }
 console.log(`JavaScript syntax checks passed (${checked} files, including nested modules).`);

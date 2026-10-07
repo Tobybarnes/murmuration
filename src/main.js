@@ -1,6 +1,7 @@
 import { PARAMS } from './parameters.js';
 import { createSimulation } from './simulation.js';
 import { FADERS_KEY, writeJSON, readFaders } from './storage.js';
+import { mountSources } from './inputs/sources.js';
 
 const $ = (id) => document.getElementById(id);
 const canvas = $('flock');
@@ -10,6 +11,7 @@ const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 let paused = reducedMotion.matches;
 let sim;
 let noticeTimer;
+let sourceItemCount = null;
 const controls = PARAMS.map((parameter, index) => {
   const fader = document.createElement('div');
   fader.className = 'fader';
@@ -32,6 +34,11 @@ const controls = PARAMS.map((parameter, index) => {
   $('faders').append(fader);
   return { input, output };
 });
+const countControl = controls[PARAMS.findIndex(parameter => parameter.key === 'count')];
+if (countControl) {
+  countControl.input.disabled = true;
+  countControl.input.title = 'Bird count follows the items in Sources.';
+}
 
 function luminance(color) {
   const channels = color.match(/[\d.]+/g).slice(0, 3).map(Number).map(value => {
@@ -59,7 +66,7 @@ function syncControls() {
   PARAMS.forEach((parameter, index) => {
     const v = values[index];
     const resolved = parameter.min + (parameter.max - parameter.min) * (parameter.curve ? v ** parameter.curve : v);
-    const formatted = String(parameter.fmt(resolved));
+    const formatted = parameter.key === 'count' && sourceItemCount !== null ? String(sourceItemCount) : String(parameter.fmt(resolved));
     controls[index].input.value = String(Math.round(v * 1000));
     controls[index].input.setAttribute('aria-valuetext', formatted);
     controls[index].output.textContent = formatted;
@@ -138,6 +145,24 @@ try {
   console.error(error);
 }
 setPaused(paused);
+if (sim) mountSources({
+  notice,
+  onState(state) {
+    sourceItemCount = state.items.length;
+    sim.sync(state.items, state.changes);
+    sim.setEnvironment(state.environment);
+    $('count').textContent = state.items.length.toLocaleString('en-US');
+    $('count-label').textContent = state.mode === 'sample' ? (state.label === 'Sample flock' ? 'sample items' : 'fixture items') : 'items';
+    $('sources-empty').hidden = state.items.length > 0;
+    if (countControl) countControl.output.textContent = String(state.items.length);
+    $('source-label').textContent = state.mode === 'sample'
+      ? `${state.label} · ${state.liveAtmosphere ? 'sample items, live atmosphere' : 'fictional or imported metadata'}`
+      : `My sources · ${state.liveCount} live connection${state.liveCount === 1 ? '' : 's'}`;
+    canvas.dataset.itemCount = String(state.items.length);
+    canvas.dataset.sourceMode = state.mode;
+    canvas.setAttribute('aria-label', `Animated flock representing ${state.items.length} ${state.mode === 'sample' ? 'sample' : 'personal'} items. Open Sources to choose the data shown.`);
+  },
+});
 if (paused) notice('Motion is paused to match your device settings. Resume when you’re ready.');
 reducedMotion.addEventListener('change', event => { if (event.matches) setPaused(true); });
 
@@ -156,6 +181,7 @@ window.addEventListener('keydown', event => {
     toggleSettings(false); $('settings-toggle').focus(); return;
   }
   if (event.target.closest('input,textarea,select,[contenteditable="true"]')) return;
+  if (event.target.closest('#sources')) return;
   if (event.key === ' ' && event.target.closest('button,a')) return;
   const key = event.key.toLowerCase();
   if (key === ' ') { event.preventDefault(); setPaused(!paused); }

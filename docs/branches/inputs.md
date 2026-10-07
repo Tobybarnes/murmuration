@@ -1,6 +1,8 @@
 # Inputs branch brief
 
-Plan checked against provider documentation on 7 October 2026. `feature/inputs` explores how real activity reaches the flock. `feature/realistic-birds` owns rendering; `feature/wires` owns landing, perches and scene movement. Based on the live dot visualizer at `bb0cf87`. No integrations are implemented or accounts connected by creating these branches.
+Plan checked against provider documentation on 7 October 2026. `feature/inputs` explores how real activity reaches the flock. `feature/realistic-birds` owns rendering; `feature/wires` owns landing, perches and scene movement. Based on the live dot visualizer at `bb0cf87`.
+
+The branch now implements the Sources panel, canonical item store, sample replay, metadata import/export, browser Gmail authorization, Open-Meteo weather and Last.fm listening. X has a gated server-only adapter and sends no requests from the public page. See [Inputs setup](../INPUTS-SETUP.md) for the current personal-pilot behavior and connection steps. Private account setup and provider credentials are still required; no accounts are connected by deploying this branch.
 
 ## Shared data contract
 
