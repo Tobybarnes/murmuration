@@ -109,3 +109,20 @@ test('the first item snapshot populates quietly without replaying arrival events
   assert.equal(bird.activity, 0);
   assert.ok(bird.x > 0 && bird.x < 1200);
 });
+
+
+test('targetless activity animates a bounded subset without adding birds or replaying', () => {
+  const scene = createSkyScene();
+  const items = Array.from({ length: 20 }, (_, i) => ({ itemId: `item/${i}` }));
+  scene.sync(items);
+  const changes = [{ eventId: 'listen/track/1', sourceId: 'lastfm', itemId: '', type: 'activity', expiresAt: Date.now() + 10000 }];
+  scene.sync(items, changes);
+  const active = scene.getFrame().birds.filter(bird => bird.activity > 0);
+  assert.equal(active.length, 7);
+  assert.equal(scene.getFrame().birds.length, 20);
+  assert.ok(active.every(bird => bird.pose === 'flying'));
+  scene.update(1000, 1000);
+  const response = active.map(bird => bird.activity);
+  scene.sync(items, changes);
+  assert.deepEqual(active.map(bird => bird.activity), response);
+});
