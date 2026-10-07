@@ -22,6 +22,7 @@
           <button id="view-birds" type="button" aria-pressed="true">Birds</button>
           <button id="view-dots" type="button" aria-pressed="false">Dots</button>
         </div>
+        <p id="notice" class="notice" role="status" aria-live="polite"></p>
       </div>
       <div class="toolbar" aria-label="Playback controls">
         <button id="pause" type="button" aria-pressed="false" title="Pause animation (Space)">Pause</button>
@@ -51,7 +52,6 @@
       <footer><span>Adapted from <a href="https://benbashford.com/experiments/murmuration/murmuration.html" target="_blank" rel="noopener noreferrer">Ben Bashford’s experiment <span aria-hidden="true">↗</span></a></span><span class="footer-right"><span id="fps" aria-label="Frames per second">— fps</span><span class="source-label">Local simulation · no accounts connected</span></span></footer>
     </div>
     <button id="show" type="button" hidden>Show interface <span aria-hidden="true">↗</span></button>
-    <p id="notice" class="notice" role="status" aria-live="polite"></p>
     <div id="error" class="error" role="alert" hidden></div>
     <noscript><p class="error">Enable JavaScript to run the flock simulation.</p></noscript>
   </main>
