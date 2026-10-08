@@ -28,13 +28,13 @@ const colours={bg:[38,57,46],fg:[238,229,210],accent:[196,166,122],hover:[159,17
 function frame(birds,theme=0){return {width:800,height:600,parameters:{theme,trails:0,linkA:0,labels:0,size:5},birds,geometry:[],environment:{}};}
 const marker=(kind,index,radius=3)=>({publicType:kind,birdId:`public:${kind}:stable-${index}`,x:100+index*100,y:200+index*20,z:index,radius});
 
-test('the real public renderer draws four different finite shapes and balanced paths without changing bird state',()=>{
+test('the public renderer draws coloured circles with balanced paths without changing bird state',()=>{
   const ctx=recordingContext(),value=frame(['news','social','music','quakes'].map((kind,index)=>marker(kind,index)));
   const before=structuredClone(value);
   createCanvasRenderer(ctx).draw(value,{colours,publicMode:true,connections:false,labels:false});
   assert.deepEqual(value,before);assert.equal(ctx.paths.length,4);
   assert.deepEqual(ctx.paths.map(path=>path.commands.map(command=>command[0])),[
-    ['arc'],['rect'],['moveTo','lineTo','lineTo','closePath'],['moveTo','lineTo','lineTo','lineTo','closePath'],
+    ['arc'],['arc'],['arc'],['arc'],
   ]);
   assert.ok(ctx.paths.every(path=>path.paints.map(paint=>paint.kind).join(',')==='stroke,fill,stroke'));
   assert.equal(new Set(ctx.paths.map(path=>path.paints.find(paint=>paint.kind==='fill').style)).size,4);

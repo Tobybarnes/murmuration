@@ -71,10 +71,7 @@ export function createCanvasRenderer(ctx) {
         if(!style)continue;
         const radius=Math.max(4.2,bird.radius*1.35),x=bird.x,y=bird.y;
         ctx.beginPath();
-        if(style.shape==='circle'){ctx.arc(x,y,radius,0,TAU);}
-        else if(style.shape==='triangle'){ctx.moveTo(x,y-radius*1.25);ctx.lineTo(x+radius,y+radius*.8);ctx.lineTo(x-radius,y+radius*.8);ctx.closePath();}
-        else if(style.shape==='diamond'){ctx.moveTo(x,y-radius*1.3);ctx.lineTo(x+radius,y);ctx.lineTo(x,y+radius*1.3);ctx.lineTo(x-radius,y);ctx.closePath();}
-        else {ctx.rect(x-radius*.85,y-radius*.85,radius*1.7,radius*1.7);}
+        ctx.arc(x,y,radius,0,TAU);
         // The outline keeps marks distinct on both bright and dark sky photos.
         ctx.strokeStyle=photo?'rgba(38,57,46,.95)':publicMarkerOutline(C.bg);ctx.lineWidth=3.5;ctx.stroke();
         ctx.fillStyle=style.colour;ctx.fill();

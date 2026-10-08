@@ -16,7 +16,7 @@ export function mountPublicExplorer({onSelect=()=>{},onCity=()=>{},onOpen=()=>{}
     const button=document.createElement('button');button.type='button';button.dataset.type=type.id;button.className='legend-entry';button.setAttribute('aria-pressed','false');
     const mark=document.createElementNS('http://www.w3.org/2000/svg','svg');mark.setAttribute('class','type-mark');mark.setAttribute('viewBox','0 0 12 12');mark.setAttribute('aria-hidden','true');
     const path=document.createElementNS('http://www.w3.org/2000/svg','path');
-    path.setAttribute('d',({circle:'M10 6a4 4 0 1 1-8 0a4 4 0 1 1 8 0',square:'M2 2h8v8H2z',triangle:'M6 1.5 10.5 10H1.5z',diamond:'M6 1 11 6 6 11 1 6z',sky:'M10 6a4 4 0 1 1-8 0a4 4 0 1 1 8 0'})[type.shape]);mark.append(path);
+    path.setAttribute('d','M10 6a4 4 0 1 1-8 0a4 4 0 1 1 8 0');mark.append(path);
     const name=document.createElement('span');name.textContent=type.name;
     const count=document.createElement('span');count.className='legend-count';
     button.append(mark,name,count);button.addEventListener('click',()=>selectType(type.id));legend.append(button);buttons.set(type.id,{button,count});

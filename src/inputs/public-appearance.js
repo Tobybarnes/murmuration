@@ -1,9 +1,9 @@
 export const PUBLIC_TYPES = [
-  {id:'news',name:'News',shape:'circle',dark:'#df9878',light:'#965038'},
-  {id:'social',name:'Social',shape:'square',dark:'#b6c5a0',light:'#4d6c43'},
-  {id:'music',name:'Music',shape:'triangle',dark:'#dcc47d',light:'#886921'},
-  {id:'quakes',name:'Earthquakes',shape:'diamond',dark:'#d0a3a6',light:'#944f65'},
-  {id:'weather',name:'Weather',shape:'sky',dark:'#abc4c8',light:'#48676d'},
+  {id:'news',name:'News',dark:'#df9878',light:'#965038'},
+  {id:'social',name:'Social',dark:'#b6c5a0',light:'#4d6c43'},
+  {id:'music',name:'Music',dark:'#dcc47d',light:'#886921'},
+  {id:'quakes',name:'Earthquakes',dark:'#d0a3a6',light:'#944f65'},
+  {id:'weather',name:'Weather',dark:'#abc4c8',light:'#48676d'},
 ];
 export function publicType(source) {
   return ({news:'news','hacker-news':'news',bluesky:'social',usgs:'quakes',lastfm:'music',listenbrainz:'music',weather:'weather'})[source] || null;
