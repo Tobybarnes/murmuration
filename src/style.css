@@ -1,4 +1,4 @@
-:root { --bg:#153243; --fg:#ebf2fa; --accent:#ffa500; --hover:#7d8e9d; --panel:rgba(21,50,67,.96); color-scheme:dark; font-family:'Avenir Next',Avenir,'Trebuchet MS',sans-serif; font-synthesis:none; }
+:root { --bg:#26392e; --fg:#eee5d2; --muted:#b6baac; --accent:#c4a67a; --hover:#9fac8f; --panel:rgba(38,57,46,.96); color-scheme:dark; font-family:'Avenir Next',Avenir,'Trebuchet MS',sans-serif; font-synthesis:none; }
 * { box-sizing:border-box; }
 html,body { margin:0; width:100%; height:100%; overflow:hidden; background:var(--bg); color:var(--fg); }
 body { -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
@@ -37,7 +37,7 @@ body.paused .status-dot { background:var(--hover); }
 .pointer-hint { font-size:11px; color:var(--muted); }
 #settings-toggle { pointer-events:auto; padding-right:0; }
 #settings-toggle span { font-size:17px; margin-left:10px; color:var(--accent); }
-.settings { pointer-events:auto; background:color-mix(in srgb,var(--bg) 98%,var(--fg)); padding:0 18px 12px; margin-bottom:20px; border-radius:9px; box-shadow:0 0 0 1px color-mix(in srgb,var(--fg) 15%,transparent),0 4px 20px #00000008,0 10px 35px #00000008; max-height:50dvh; overflow:auto; scrollbar-width:thin; }
+.settings { pointer-events:auto; background:var(--bg); padding:0 18px 12px; margin-bottom:20px; border-radius:9px; box-shadow:0 0 0 1px color-mix(in srgb,var(--fg) 15%,transparent),0 4px 20px #00000008,0 10px 35px #00000008; max-height:50dvh; overflow:auto; scrollbar-width:thin; }
 .settings-heading { display:flex; justify-content:space-between; align-items:center; }
 .settings-heading h2 { font-size:11px; font-weight:500; margin:0; color:var(--muted); }
 .settings-heading>div { display:flex; }
@@ -63,7 +63,7 @@ body.interface-hidden .interface { opacity:0; transform:translateY(-8px); pointe
 @keyframes enter { from { opacity:0; transform:translateY(8px); filter:blur(5px); } to { opacity:1; transform:translateY(0); filter:blur(0); } }
 @media(min-width:1600px) { .faders { gap:20px; } .fader input { height:110px; } }
 @media(max-width:1050px) { .faders { grid-template-columns:repeat(8,minmax(0,1fr)); row-gap:22px; } .settings-foot { display:none; } .pointer-hint { display:none; } .settings { max-height:54dvh; } .fader input { height:72px; } }
-@media(max-width:600px) { .top { left:22px; right:16px; top:max(22px,env(safe-area-inset-top)); gap:8px; } .eyebrow { font-size:8px; } h1 { font-size:34px; } .identity p { font-size:10px; } .toolbar { gap:0; } .toolbar #pause { min-width:58px; padding:0 9px; } .toolbar #scatter { position:absolute; right:0; top:48px; } .toolbar #fullscreen { display:none; } .bottom { left:22px; right:22px; bottom:max(17px,env(safe-area-inset-bottom)); } .flock-status { gap:6px; font-size:10px; } .divider { margin:0 1px; } .observation { gap:6px; margin-bottom:8px; } #settings-toggle { font-size:11px; padding-left:4px; } #settings-toggle span { margin-left:5px; } .faders { grid-template-columns:repeat(4,minmax(0,1fr)); row-gap:22px; } .settings { max-height:47dvh; padding:0 12px 6px; margin-bottom:14px; } .settings-heading { position:sticky; top:0; z-index:1; background:color-mix(in srgb,var(--bg) 98%,var(--fg)); } footer { font-size:9px; gap:8px; padding-top:14px; } .source-label { display:none; } .footer-right { gap:0; } .notice { left:22px; top:130px; } }
+@media(max-width:600px) { .top { left:22px; right:16px; top:max(22px,env(safe-area-inset-top)); gap:8px; } .eyebrow { font-size:8px; } h1 { font-size:34px; } .identity p { font-size:10px; } .toolbar { gap:0; } .toolbar #pause { min-width:58px; padding:0 9px; } .toolbar #scatter { position:absolute; right:0; top:48px; } .toolbar #fullscreen { display:none; } .bottom { left:22px; right:22px; bottom:max(17px,env(safe-area-inset-bottom)); } .flock-status { gap:6px; font-size:10px; } .divider { margin:0 1px; } .observation { gap:6px; margin-bottom:8px; } #settings-toggle { font-size:11px; padding-left:4px; } #settings-toggle span { margin-left:5px; } .faders { grid-template-columns:repeat(4,minmax(0,1fr)); row-gap:22px; } .settings { max-height:47dvh; padding:0 12px 6px; margin-bottom:14px; } .settings-heading { position:sticky; top:0; z-index:1; background:var(--bg); } footer { font-size:9px; gap:8px; padding-top:14px; } .source-label { display:none; } .footer-right { gap:0; } .notice { left:22px; top:130px; } }
 @media(prefers-reduced-motion:reduce) { *,*::before,*::after { animation:none!important; transition:none!important; } }
 
 @media(max-width:600px) { .toolbar { display:grid; grid-template-columns:44px 44px; } .toolbar #pause { grid-column:1 / -1; margin-right:0; } .toolbar #scatter { position:static; grid-column:1 / -1; order:5; } .toolbar #fullscreen { display:inline-flex; } }
@@ -72,7 +72,7 @@ body.interface-hidden .interface { opacity:0; transform:translateY(-8px); pointe
 /* Sources stay beside the scene on desktop and become a scrollable sheet on
    smaller screens. The data controls use the flock's existing palette. */
 #sources-toggle { box-shadow:0 0 0 1px color-mix(in srgb,var(--fg) 22%,transparent); margin-right:8px; }
-.sources { position:fixed; z-index:5; top:90px; right:30px; bottom:105px; width:min(440px,calc(100vw - 44px)); padding:24px; overflow:auto; overscroll-behavior:contain; scrollbar-width:thin; background:color-mix(in srgb,var(--bg) 98%,var(--fg)); border-radius:9px; box-shadow:0 0 0 1px color-mix(in srgb,var(--fg) 18%,transparent),0 8px 30px #00000012,0 20px 55px #00000010; }
+.sources { position:fixed; z-index:5; top:90px; right:30px; bottom:105px; width:min(440px,calc(100vw - 44px)); padding:24px; overflow:auto; overscroll-behavior:contain; scrollbar-width:thin; background:var(--bg); border-radius:9px; box-shadow:0 0 0 1px color-mix(in srgb,var(--fg) 18%,transparent),0 8px 30px #00000012,0 20px 55px #00000010; }
 .sources-heading,.source-card-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; }
 .sources-heading h2 { font-family:'Iowan Old Style','Palatino Linotype',Palatino,Georgia,serif; font-weight:400; font-size:36px; letter-spacing:-.025em; line-height:1.1; margin:9px 0 0; }
 .sources-heading .eyebrow { color:var(--muted); font-size:9px; }
