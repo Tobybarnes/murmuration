@@ -110,6 +110,16 @@ body.interface-hidden .interface { opacity:0; transform:translateY(-8px); pointe
 .location-results { display:flex; flex-direction:column; gap:3px; margin-top:8px; }
 .location-results button { text-align:left; padding:10px 12px; font-size:11px; }
 .source-modes button:focus-visible { outline-offset:1px; }
+.source-card select { width:100%; min-height:44px; padding:10px 12px; color:var(--fg); background:var(--bg); border:0; border-radius:5px; box-shadow:0 0 0 1px color-mix(in srgb,var(--fg) 22%,transparent); font:inherit; font-size:12px; }
+.public-feed { margin-top:22px; padding-top:20px; border-top:1px solid color-mix(in srgb,var(--fg) 12%,transparent); }
+.public-feed h3 { font-size:13px; }
+.public-feed .source-badge[data-status=live] { color:var(--accent); }
+.public-feed .public-time { font-size:10px; font-variant-numeric:tabular-nums; color:var(--muted); margin:8px 0 0; }
+.public-feed details { margin-top:0; }
+.public-items { margin:0; padding-left:17px; font-size:11px; text-wrap:pretty; }
+.public-items li { margin-bottom:6px; overflow-wrap:anywhere; }
+.public-items a { line-height:1.5; margin:0; }
+.public-card .public-feeds { margin-top:6px; }
 .sources-empty { position:fixed; top:47%; left:50%; transform:translate(-50%,-50%); width:calc(100% - 50px); text-align:center; font-size:13px; color:var(--muted); pointer-events:none; }
 @media(max-width:760px) {
   .sources { top:15px; right:15px; bottom:15px; width:calc(100vw - 30px); padding:22px; }

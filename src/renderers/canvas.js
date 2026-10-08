@@ -87,7 +87,7 @@ export function createCanvasRenderer(ctx) {
       for (let i = 0; i < labelCount; i++) {
         const bird = birds[i];
         ctx.fillStyle = bird.linked ? rgb(C.fg, 0.75) : rgb(C.hover);
-        ctx.fillText(bird.birdId, bird.x + bird.radius + 5, bird.y);
+        ctx.fillText(bird.label || bird.birdId, bird.x + bird.radius + 5, bird.y);
       }
     }
 

@@ -3,12 +3,15 @@ import {sampleItems,sampleSequence,SAMPLE_SOURCE} from './fixtures.js';
 import {fetchGmailInbox,fetchLastfm,fetchWeather,searchLocations} from './providers.js';
 import {createGmailSession,loadGoogleIdentity} from './gmail-auth.js';
 import {createSourceLifecycle} from './lifecycle.js';
+import {createPublicSession} from './public-session.js';
+import {publicMarkup,createPublicView} from './public-view.js';
 
 const markup=`
 <div class="sources-heading"><div><span class="eyebrow">What moves the flock</span><h2>Sources</h2></div><button id="sources-close" class="icon-button" aria-label="Close sources" type="button">×</button></div>
-<p class="sources-intro">A message becomes a bird. A reply changes its movement. Connect weather or listening to try a live atmosphere with the sample flock.</p>
-<div class="source-modes" role="group" aria-label="Choose data shown"><button id="mode-sample" type="button" aria-pressed="true">Sample flock</button><button id="mode-live" type="button" aria-pressed="false">My sources</button></div>
+<p class="sources-intro">A message becomes a bird. A reply changes its movement. Choose a sample, your own connections or a flock fed by the public world.</p>
+<div class="source-modes" role="group" aria-label="Choose data shown"><button id="mode-sample" type="button" aria-pressed="true">Sample flock</button><button id="mode-public" type="button" aria-pressed="false">Public world</button><button id="mode-live" type="button" aria-pressed="false">My sources</button></div>
 <p id="sources-summary" class="source-summary" aria-live="polite"></p>
+${publicMarkup}
 <section class="source-card"><div class="source-card-heading"><h3>Sample activity</h3><span class="source-badge">Local only</span></div><p>Fictional mail, agent conversations and shared documents. Replay arrivals, a repeated delivery, a read and an archive.</p><div class="source-actions"><button id="sample-replay" type="button">Replay activity</button><button id="sample-reset" type="button">Reset sample</button></div><p id="sample-status" class="source-status" aria-live="polite">36 fictional items. No accounts connected.</p><details><summary>Import or export a fixture</summary><p>Files stay in this browser tab. Only item metadata is used; message bodies and credentials are discarded. An export may contain personal IDs and titles. Keep it private.</p><label class="file-label" for="fixture-import">Import metadata JSON</label><input id="fixture-import" type="file" accept=".json,application/json"><button id="fixture-export" type="button">Export visible metadata</button></details></section>
 <section class="source-card"><div class="source-card-heading"><h3>Gmail</h3><span id="gmail-badge" class="source-badge">Setup required</span></div><p>One bird per Inbox message, up to 2,000. Unread messages have a centre dot; reading clears it. Archives remove their bird. Subjects, senders and message bodies are not requested.</p><label for="gmail-client">Google OAuth client ID</label><input id="gmail-client" type="text" autocomplete="off" spellcheck="false" placeholder="…apps.googleusercontent.com"><div class="source-actions"><button id="gmail-connect" type="button">Load Google sign-in</button><button id="gmail-refresh" type="button" disabled>Refresh</button><button id="gmail-disconnect" type="button" disabled>Disconnect</button></div><p id="gmail-status" class="source-status" aria-live="polite">Requires your Google OAuth web client. Reconnect after reload or token expiry. Refreshes once a minute while this page is visible.</p><details><summary>Set up Gmail</summary><ol><li>Enable the Gmail API in a Google Cloud project.</li><li>Create an OAuth web client and add this exact origin: <code id="gmail-origin"></code></li><li>Configure the consent screen, add yourself as a test user, and allow the Gmail metadata scope.</li><li>Paste the public client ID above. Load sign-in, then connect.</li></ol><p>Authorization stays in memory. There is no background sync or server storage. Disconnect stops requests and leaves the last flock in this tab; Forget Gmail removes it. Google’s restricted-scope requirements apply if you distribute this beyond a personal pilot.</p><div class="source-actions"><button id="gmail-forget" type="button">Forget Gmail metadata</button><button id="gmail-revoke" type="button">Revoke Google access</button></div><a href="https://developers.google.com/identity/oauth2/web/guides/use-token-model" target="_blank" rel="noopener noreferrer">Google token flow documentation ↗</a></details></section>
 <section class="source-card"><div class="source-card-heading"><h3>Weather</h3><span id="weather-badge" class="source-badge">Choose a city</span></div><p>Wind, cloud and daylight shape the atmosphere. Search a city to use current public observations.</p><form id="weather-search"><label for="weather-city">City</label><div class="input-action"><input id="weather-city" type="search" autocomplete="off" placeholder="Search for a city" minlength="2" required><button type="submit">Search</button></div></form><div id="weather-results" class="location-results"></div><div class="source-actions"><button id="weather-refresh" type="button" disabled>Refresh weather</button><button id="weather-disconnect" type="button" disabled>Clear weather</button></div><p id="weather-status" class="source-status" aria-live="polite">No location selected. Refreshes every 15 minutes; observations expire after 30 minutes.</p><a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Weather data by Open-Meteo ↗</a></section>
@@ -27,25 +30,34 @@ export function mountSources({onState=()=>{},notice=()=>{}}={}) {
   let lastGmail=0,lastWeather=0,lastMusic=0,gmailSources=new Set(),musicUser='',musicKey='',weatherLocation=null;
   const controllers={};
   function cancel(kind){epochs[kind]++;controllers[kind]?.abort();pending[kind]=false;}
-  function current(){return mode==='sample'?sample:live;}
+  const publicView=createPublicView(panel);
+  const publicSession=createPublicSession({onChange(state){publicView.update(state);if(mode==='public')emit();}});
+  function current(){return mode==='public'?publicSession:mode==='sample'?sample:live;}
   function sourceStatus(kind,status,message){states[kind]={status,message};$(`${kind==='music'?'music':kind}-badge`).textContent=status;$(`${kind}-status`).textContent=message;emit();}
   function emit(){
     const state=current().getState();
     const liveEnvironment=live.getState().environment;
     const liveAtmosphere=mode==='sample'&&fixtureName==='Sample flock'&&Boolean(liveEnvironment.weather||liveEnvironment.listening);
     if(liveAtmosphere)state.environment={...state.environment,...liveEnvironment};
-    const liveCount=Object.values(states).filter(value=>value.status==='Live').length;
-    $('sources-summary').textContent=`${mode==='sample'?fixtureName:'My sources'} · ${state.items.length} items · ${mode==='sample'?(liveAtmosphere?'sample items, live atmosphere':'fictional or imported metadata'):`${liveCount} live connection${liveCount===1?'':'s'}`}`;
+    const liveCount=mode==='public'?state.sources.filter(value=>value.status==='live').length:Object.values(states).filter(value=>value.status==='Live').length;
+    const label=mode==='public'?'Public world':mode==='sample'?fixtureName:'My sources';
+    $('public-world').hidden=mode!=='public';
+    for(const card of panel.querySelectorAll('.source-card:not(.public-card)'))card.hidden=mode==='public';
+    $('mode-public').setAttribute('aria-pressed',String(mode==='public'));
+    $('sources-summary').textContent=`${label} · ${state.items.length} items · ${mode==='public'?`${liveCount} current public feeds`:mode==='sample'?(liveAtmosphere?'sample items, live atmosphere':'fictional or imported metadata'):`${liveCount} live connection${liveCount===1?'':'s'}`}`;
     $('mode-sample').setAttribute('aria-pressed',String(mode==='sample'));$('mode-live').setAttribute('aria-pressed',String(mode==='live'));
-    onState({...state,mode,liveAtmosphere,label:mode==='sample'?fixtureName:'My sources',liveCount});
+    onState({...state,mode,liveAtmosphere,label,liveCount});
   }
-  function setMode(next){mode=next;emit();}
+  function setMode(next){mode=next;if(mode==='public'&&!document.hidden)publicSession.start();else publicSession.suspend();emit();}
+  $('public-city').addEventListener('change',event=>publicSession.setCity(event.target.value));
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)publicSession.suspend();else if(mode==='public')publicSession.start();});
   function resetSample(){clearInterval(replay);replay=null;sample=createInputStore();const now=Date.now();sample.applySnapshot(SAMPLE_SOURCE,sampleItems(now),{revision:now,now});fixtureName='Sample flock';$('sample-status').textContent='36 fictional items. No accounts connected.';$('sample-replay').textContent='Replay activity';setMode('sample');}
   function close(){panel.hidden=true;$('sources-toggle').setAttribute('aria-expanded','false');$('sources-toggle').focus();}
   function open(){panel.hidden=false;$('sources-toggle').setAttribute('aria-expanded','true');$('sources-close').focus();}
   $('sources-close').addEventListener('click',close);
   $('sources-toggle').addEventListener('click',()=>panel.hidden?open():close());
   panel.addEventListener('keydown',event=>{if(event.key==='Escape'){event.stopPropagation();close();}});
+  $('mode-public').addEventListener('click',()=>setMode('public'));
   $('mode-sample').addEventListener('click',()=>setMode('sample'));$('mode-live').addEventListener('click',()=>setMode('live'));
   $('sample-reset').addEventListener('click',resetSample);
   $('sample-replay').addEventListener('click',()=>{
@@ -93,7 +105,7 @@ export function mountSources({onState=()=>{},notice=()=>{}}={}) {
   }
   $('music-connect').addEventListener('click',()=>{const username=$('music-user').value.trim(),key=$('music-key').value.trim();if(!username||!key){sourceStatus('music','Setup required','Enter a Last.fm username and API key.');return;}cancel('music');live.setEnvironment('listening',null);musicUser=username;musicKey=key;$('music-disconnect').disabled=false;sourceStatus('music','Connecting','Reading recent listening…');$('music-key').value='';refreshMusic();});
   $('music-refresh').addEventListener('click',()=>refreshMusic());$('music-disconnect').addEventListener('click',()=>{cancel('music');musicKey='';musicUser='';$('music-key').value='';live.setEnvironment('listening',null);$('music-refresh').disabled=true;$('music-disconnect').disabled=true;sourceStatus('music','Disconnected','Last.fm credentials and current listening cleared.');});
-  function tick(){const now=Date.now();if(gmail.hasToken()&&now-lastGmail>=60_000)refreshGmail();if(weatherLocation&&now-lastWeather>=900_000)refreshWeather();if(musicKey&&now-lastMusic>=30_000)refreshMusic();if(['Live','Unavailable'].includes(states.gmail.status)&&!gmail.hasToken()){sourceStatus('gmail','Reconnect required','Authorization expired. Reconnect Gmail; last Inbox metadata is still shown.');$('gmail-refresh').disabled=true;}const env=live.getState(now).environment;if(states.weather.status==='Live'&&!env.weather)sourceStatus('weather','Stale','Weather observation expired. Calm fallback until the next refresh.');if(states.music.status==='Live'&&!env.listening)sourceStatus('music','Stale','Listening observation expired. Waiting for a fresh report.');emit();}
-  createSourceLifecycle({tick,suspend(){clearInterval(replay);replay=null;$('sample-replay').textContent='Replay activity';for(const kind of Object.keys(epochs))cancel(kind);$('gmail-refresh').disabled=!gmail.hasToken();$('weather-refresh').disabled=!weatherLocation;$('music-refresh').disabled=!musicKey;},dispose(){gmail.disconnect();musicKey='';}});
-  resetSample();return {getState:()=>({...current().getState(),mode}),open,close};
+  function tick(){if(mode==='public')publicSession.start();const now=Date.now();if(gmail.hasToken()&&now-lastGmail>=60_000)refreshGmail();if(weatherLocation&&now-lastWeather>=900_000)refreshWeather();if(musicKey&&now-lastMusic>=30_000)refreshMusic();if(['Live','Unavailable'].includes(states.gmail.status)&&!gmail.hasToken()){sourceStatus('gmail','Reconnect required','Authorization expired. Reconnect Gmail; last Inbox metadata is still shown.');$('gmail-refresh').disabled=true;}const env=live.getState(now).environment;if(states.weather.status==='Live'&&!env.weather)sourceStatus('weather','Stale','Weather observation expired. Calm fallback until the next refresh.');if(states.music.status==='Live'&&!env.listening)sourceStatus('music','Stale','Listening observation expired. Waiting for a fresh report.');emit();}
+  createSourceLifecycle({tick,suspend(){publicSession.suspend();clearInterval(replay);replay=null;$('sample-replay').textContent='Replay activity';for(const kind of Object.keys(epochs))cancel(kind);$('gmail-refresh').disabled=!gmail.hasToken();$('weather-refresh').disabled=!weatherLocation;$('music-refresh').disabled=!musicKey;},dispose(){publicSession.dispose();gmail.disconnect();musicKey='';}});
+  resetSample();if(new URLSearchParams(location.search).get('sources')==='public')setMode('public');return {getState:()=>({...current().getState(),mode}),open,close};
 }

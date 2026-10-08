@@ -301,6 +301,7 @@ export function createSkyScene({ width = 1200, height = 800, values = PARAMS.map
       bird.pose = bird.activity === 0 && Math.sin(seconds * 0.63 + bird.variation.glideOffset) > 0.84 ? 'gliding' : 'flying';
       bird.linked = linked[i];
       bird.readState = itemMetadata.get(id)?.readState || 'unknown';
+      bird.label = itemMetadata.get(id)?.label;
       bird.alpha = clamp(0.84 + (perspective - 1) * 0.6, 0.5, 1);
       frame.birds[i] = bird;
     }
@@ -365,7 +366,8 @@ export function createSkyScene({ width = 1200, height = 800, values = PARAMS.map
         if (arrivals.has(id)) px[i] = (birdVariation(id).phase < Math.PI ? -1 : 1) * W * 0.55;
       }
       ids[i] = id;
-      itemMetadata.set(id, { readState: ['read', 'unread', 'unknown'].includes(items[i].readState) ? items[i].readState : 'unknown' });
+      itemMetadata.set(id, { readState: ['read', 'unread', 'unknown'].includes(items[i].readState) ? items[i].readState : 'unknown',
+        label: items[i].sourceId?.startsWith('public:') ? (items[i].title||'Public item').slice(0,42) : undefined });
     }
     for (const id of birdCache.keys()) if (!selected.has(id)) birdCache.delete(id);
     for (const id of itemMetadata.keys()) if (!selected.has(id)) itemMetadata.delete(id);

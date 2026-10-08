@@ -152,15 +152,16 @@ if (sim) mountSources({
     sim.sync(state.items, state.changes);
     sim.setEnvironment(state.environment);
     $('count').textContent = state.items.length.toLocaleString('en-US');
-    $('count-label').textContent = state.mode === 'sample' ? (state.label === 'Sample flock' ? 'sample items' : 'fixture items') : 'items';
+    $('count-label').textContent = state.mode === 'public' ? 'public items' : state.mode === 'sample' ? (state.label === 'Sample flock' ? 'sample items' : 'fixture items') : 'items';
     $('sources-empty').hidden = state.items.length > 0;
+    $('sources-empty').textContent = state.mode === 'public' ? 'Reading public feeds. Open Sources to see their status.' : 'No item birds yet. Open Sources to connect an Inbox or return to the sample flock.';
     if (countControl) countControl.output.textContent = String(state.items.length);
     $('source-label').textContent = state.mode === 'sample'
       ? `${state.label} · ${state.liveAtmosphere ? 'sample items, live atmosphere' : 'fictional or imported metadata'}`
-      : `My sources · ${state.liveCount} live connection${state.liveCount === 1 ? '' : 's'}`;
+      : state.mode === 'public' ? `Public world · ${state.liveCount} current feeds` : `My sources · ${state.liveCount} live connection${state.liveCount === 1 ? '' : 's'}`;
     canvas.dataset.itemCount = String(state.items.length);
     canvas.dataset.sourceMode = state.mode;
-    canvas.setAttribute('aria-label', `Animated flock representing ${state.items.length} ${state.mode === 'sample' ? 'sample' : 'personal'} items. Open Sources to choose the data shown.`);
+    canvas.setAttribute('aria-label', `Animated flock representing ${state.items.length} ${state.mode === 'public' ? 'public' : state.mode === 'sample' ? 'sample' : 'personal'} items. Open Sources to choose the data shown.`);
   },
 });
 if (paused) notice('Motion is paused to match your device settings. Resume when you’re ready.');

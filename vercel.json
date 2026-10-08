@@ -9,7 +9,7 @@
       { "key": "X-Content-Type-Options", "value": "nosniff" },
       { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
       { "key": "Cross-Origin-Opener-Policy", "value": "same-origin-allow-popups" },
-      { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self' https://accounts.google.com/gsi/client; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; img-src 'self' data:; connect-src 'self' https://accounts.google.com/gsi/ https://oauth2.googleapis.com https://gmail.googleapis.com https://geocoding-api.open-meteo.com https://api.open-meteo.com https://ws.audioscrobbler.com; frame-src https://accounts.google.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'" }
+      { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self' https://accounts.google.com/gsi/client; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; img-src 'self' data:; connect-src 'self' https://accounts.google.com/gsi/ https://oauth2.googleapis.com https://gmail.googleapis.com https://geocoding-api.open-meteo.com https://api.open-meteo.com https://ws.audioscrobbler.com https://hacker-news.firebaseio.com https://earthquake.usgs.gov https://public.api.bsky.app; frame-src https://accounts.google.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'" }
     ]
   }]
 }
