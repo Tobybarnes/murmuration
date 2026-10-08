@@ -13,7 +13,7 @@ function luminance(colour) {
 function birdColour(colours) {
   const background = luminance(colours.bg), foreground = luminance(colours.fg);
   const contrast = (Math.max(background, foreground) + 0.05) / (Math.min(background, foreground) + 0.05);
-  return contrast >= 3 ? rgb(colours.fg) : background > 0.22 ? 'rgb(32,41,44)' : 'rgb(223,228,224)';
+  return contrast >= 3 ? rgb(colours.fg) : background > 0.22 ? 'rgb(21,28,22)' : 'rgb(250,246,231)';
 }
 
 // Read the scene's reusable projection directly. Rendering never updates time,

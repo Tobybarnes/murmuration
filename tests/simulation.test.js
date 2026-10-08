@@ -224,10 +224,10 @@ test('reset restores the default flock and palette callbacks contain usable CSS 
       onPalette: palette => palettes.push(palette),
       onStats: stats => statistics.push(stats),
     });
-    assert.equal(palettes[0].bg, 'rgb(21,50,67)');
+    assert.equal(palettes[0].bg, 'rgb(38,57,46)');
     simulation.setParameter(15, 1);
     advance(90);
-    assert.equal(palettes.at(-1).bg, 'rgb(232,232,230)');
+    assert.equal(palettes.at(-1).bg, 'rgb(238,230,214)');
     assert.match(palettes.at(-1).panel, /^rgba\(/);
     assert.ok(statistics.length >= 3);
     assert.ok(statistics.every(stats => stats.count === 2400 && stats.paused && Number.isFinite(stats.fps)));

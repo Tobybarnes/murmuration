@@ -39,10 +39,10 @@ export function createSimulation(canvas, {
   let last = performance.now(), statsTime = last, statsFrames = 0, fps = 0;
 
   // ---------------------------------------------------------------------------
-  // Colours: the site's two themes, blended by the Dark/Light fader.
+  // Earth tones, blended by the Dark/Light fader.
   // ---------------------------------------------------------------------------
-  const DARK  = { bg: [21, 50, 67],   fg: [235, 242, 250], accent: [255, 165, 0], hover: [125, 142, 157] };
-  const LIGHT = { bg: [232, 232, 230], fg: [26, 26, 26],   accent: [224, 106, 74], hover: [123, 168, 214] };
+  const DARK  = { bg: [38, 57, 46],   fg: [238, 229, 210], accent: [196, 166, 122], hover: [159, 172, 143] };
+  const LIGHT = { bg: [238, 230, 214], fg: [53, 67, 51],    accent: [132, 95, 65], hover: [102, 121, 93] };
   const C = {};
   const mix = (a, b, t) => a.map((x, k) => Math.round(x + (b[k] - x) * t));
   const rgb = (c, a = 1) => a >= 1 ? `rgb(${c[0]},${c[1]},${c[2]})` : `rgba(${c[0]},${c[1]},${c[2]},${a})`;
@@ -52,6 +52,22 @@ export function createSimulation(canvas, {
     if (Math.abs(t - lastTheme) < 0.002) return;
     lastTheme = t;
     for (const k of Object.keys(DARK)) C[k] = mix(DARK[k], LIGHT[k], t);
+    // Keep birds and labels visible as the light and dark colours cross.
+    const luminance = colour => {
+      const c = colour.map(value => {
+        const channel = value / 255;
+        return channel <= .04045 ? channel / 12.92 : ((channel + .055) / 1.055) ** 2.4;
+      });
+      return c[0] * .2126 + c[1] * .7152 + c[2] * .0722;
+    };
+    const background = luminance(C.bg);
+    for (const key of ['fg', 'accent', 'hover']) {
+      const minimum = key === 'fg' ? 4.5 : 3;
+      C[key] = [C[key], DARK[key], LIGHT[key], [255, 254, 248], [2, 4, 2]].find(colour => {
+        const foreground = luminance(colour);
+        return (Math.max(background, foreground) + .05) / (Math.min(background, foreground) + .05) >= minimum;
+      });
+    }
     onPalette({
       bg: rgb(C.bg), fg: rgb(C.fg), accent: rgb(C.accent),
       hover: rgb(C.hover), panel: rgb(C.bg, 0.82),
