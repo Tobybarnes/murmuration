@@ -10,12 +10,17 @@ createServer(async (req, res) => {
     const url = new URL(req.url, 'http://localhost');
     let pathname = decodeURIComponent(url.pathname);
     if (pathname === '/') pathname = '/index.html';
-    if (root === resolve('.') && pathname === '/favicon.svg') pathname = '/public/favicon.svg';
-    const file = resolve(root, `.${pathname}`);
+    let file = resolve(root, `.${pathname}`);
     if (!file.startsWith(root + sep) || pathname.split('/').some(p => p.startsWith('.'))) {
       res.writeHead(403); res.end('Forbidden'); return;
     }
-    if (!(await stat(file)).isFile()) throw new Error('Not a file');
+    try {
+      if (!(await stat(file)).isFile()) throw new Error('Not a file');
+    } catch (error) {
+      if (root !== resolve('.')) throw error;
+      file = resolve(root, 'public', `.${pathname}`);
+      if (!(await stat(file)).isFile()) throw new Error('Not a file');
+    }
     const data = await readFile(file);
     res.writeHead(200, { 'Content-Type': `${types[extname(file)] || 'text/plain'}; charset=utf-8`, 'Cache-Control': 'no-store' });
     res.end(req.method === 'HEAD' ? undefined : data);

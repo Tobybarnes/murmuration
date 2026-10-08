@@ -2,6 +2,7 @@ import { createWireScene } from './scenes/wires.js';
 import { createWireSky } from './scenes/wire-sky.js';
 import { drawBird } from './renderers/birds.js';
 import { drawPigeon } from './renderers/pigeons.js';
+import { drawSky } from './renderers/sky.js';
 import { createSampleStore, sampleMinute } from './fixtures/wires.js';
 import { LANES } from './scenes/perches.js';
 
@@ -12,9 +13,9 @@ const STEP = 1000 / 60;
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 const listeners = new AbortController();
 const listen = (target, type, fn) => target.addEventListener(type, fn, { signal: listeners.signal });
-let store, scenes, selectedId, active = 'wires', viewport;
+let store, scenes, selectedId, active = 'wires', viewport, skyPhoto;
 let paused = reducedMotion.matches, disposed = false, frameId = null;
-let simTime = 0, last = performance.now(), accumulator = 0, serial = 0, arrival = 0;
+let simTime = 0, skyTime = 0, last = performance.now(), accumulator = 0, serial = 0, arrival = 0;
 let replay = null, replayItem = null, noticeUntil = 0;
 
 function notice(text) { $('notice').textContent = text; noticeUntil = simTime + 5400; }
@@ -116,21 +117,16 @@ function resize() {
 }
 function draw() {
   const { width: w, height: h } = viewport;
-  const gradient = ctx.createLinearGradient(0, 0, w * .15, h);
-  gradient.addColorStop(0, '#dce7e2'); gradient.addColorStop(.56, '#e9eadc'); gradient.addColorStop(1, '#f5eddb');
-  ctx.fillStyle = gradient; ctx.fillRect(0, 0, w, h);
-  // Thin, high clouds leave the wires as the only strong lines in the scene.
-  ctx.fillStyle = '#fff9e71c';
-  for (let i = 0; i < 4; i++) {
-    ctx.beginPath(); ctx.ellipse(w * (.25 + i * .27), h * (.22 + i % 2 * .13), w * .3, 13 + i * 3, -.07, 0, Math.PI * 2); ctx.fill();
-  }
+  drawSky(ctx, skyPhoto, w, h, skyTime);
   const frame = scenes[active].getFrame();
   for (const wire of frame.geometry) {
-    ctx.strokeStyle = '#34473e9e'; ctx.lineWidth = 1.15;
+    ctx.strokeStyle = '#172c3fbf'; ctx.lineWidth = 1.15;
     ctx.beginPath(); ctx.moveTo(wire.x1, wire.y1);
     ctx.quadraticCurveTo((wire.x1 + wire.x2) / 2, (wire.y1 + wire.y2) / 2 + wire.sag * 2, wire.x2, wire.y2); ctx.stroke();
-    ctx.fillStyle = '#53645b'; ctx.font = `500 ${w < 640 ? 8 : 9}px "Avenir Next", Avenir, sans-serif`;
+    ctx.fillStyle = '#152c40'; ctx.font = `500 ${w < 640 ? 8 : 9}px "Avenir Next", Avenir, sans-serif`;
+    ctx.shadowColor = '#ffffff'; ctx.shadowBlur = 5;
     ctx.fillText(wire.lane.toUpperCase(), w < 640 ? 22 : 40, wire.y1 - 13);
+    ctx.shadowBlur = 0;
   }
   for (const bird of frame.birds) {
     if (bird.birdId === selectedId && !bird.departing) {
@@ -139,7 +135,7 @@ function draw() {
     }
     // Perched coordinates are feet; flight coordinates are body centres.
     const renderer = active === 'sky' ? drawPigeon : drawBird;
-    renderer(ctx, bird, { colour: '#293d36', alpha: active === 'sky' ? (bird.readState === 'read' ? .60 : .95) * bird.alpha : bird.readState === 'read' ? .52 : .92 });
+    renderer(ctx, bird, { colour: '#172c3c', alpha: active === 'sky' ? (bird.readState === 'read' ? .60 : .95) * bird.alpha : bird.readState === 'read' ? .52 : .92 });
   }
   const total = store.items().length;
   const visible = Object.values(frame.counts).reduce((sum, counts) => sum + counts.visible, 0);
@@ -170,6 +166,7 @@ function tick(now) {
     accumulator += Math.min(50, Math.max(0, now - last));
     while (accumulator >= STEP - .00001) {
       simTime += STEP; accumulator -= STEP;
+      if (!reducedMotion.matches) skyTime += STEP;
       if (replay) {
         while (replay.steps.length && simTime - replay.started >= replay.steps[0].at) playStep(replay.steps.shift());
         if (!replay.steps.length) stopReplay();
@@ -183,10 +180,11 @@ function tick(now) {
   if (!paused) requestDraw();
 }
 function suspend() { if (frameId !== null) cancelAnimationFrame(frameId); frameId = null; accumulator = 0; }
-function dispose() { disposed = true; suspend(); listeners.abort(); Object.values(scenes).forEach(scene => scene.dispose()); }
+function dispose() { disposed = true; suspend(); listeners.abort(); skyPhoto.onload = null; Object.values(scenes).forEach(scene => scene.dispose()); }
 
 try {
   if (!ctx) throw new Error('Canvas 2D unavailable');
+  skyPhoto = new Image(); skyPhoto.onload = requestDraw; skyPhoto.src = '/sky-photo.png';
   resize(); resetSample(false); setPaused(paused);
   if (reducedMotion.matches) notice('Motion is paused to match your device settings. Sample changes appear at rest.');
   listen($('scene-wires'), 'click', () => switchScene('wires'));

@@ -13,7 +13,7 @@ class Element extends EventTarget {
 }
 
 async function withHost(run) {
-  const saved = new Map(), scheduled = new Map(), errors = [];
+  const saved = new Map(), scheduled = new Map(), errors = [], photos = [], photoDraws = [];
   const ids = ['wires', 'notice', 'replay', 'selected-item', 'read', 'archive', 'selected-state', 'pause', 'scene-wires', 'scene-sky', 'scene-caption', 'scene-detail', 'summary', 'overflow', 'play-state', 'new-email', 'agent-reply', 'reset', 'error', 'count-email', 'count-agents', 'count-other'];
   const elements = Object.fromEntries(ids.map(id => [id, new Element(id)]));
   const media = Object.assign(new EventTarget(), { matches: false });
@@ -25,11 +25,12 @@ async function withHost(run) {
     querySelectorAll: selector => selector === '[data-lane]' ? [] : Object.values(elements),
   });
   const noop = () => {};
-  const context = new Proxy({ createLinearGradient: () => ({ addColorStop: noop }) }, { get: (target, property) => property in target ? target[property] : noop });
+  const context = new Proxy({ createLinearGradient: () => ({ addColorStop: noop }), drawImage: (...args) => photoDraws.push(args.slice(1)) }, { get: (target, property) => property in target ? target[property] : noop });
   elements.wires.getContext = () => context;
   elements.wires.getBoundingClientRect = () => ({ width: window.innerWidth, height: window.innerHeight, left: 0, top: 0 });
   let now = 0, nextFrame = 1;
   const replacements = { window, document, matchMedia: () => media, performance: { now: () => now },
+    Image: class { constructor() { this.complete = false; this.naturalWidth = 0; this.naturalHeight = 0; photos.push(this); } },
     requestAnimationFrame(callback) { const id = nextFrame++; scheduled.set(id, callback); return id; },
     cancelAnimationFrame(id) { scheduled.delete(id); },
   };
@@ -47,7 +48,7 @@ async function withHost(run) {
   try {
     await import(`../src/wires-main.js?test=${Math.random()}`);
     assert.deepEqual(errors, []); assert.equal(elements.error.hidden, true);
-    await run({ elements, advance, document, window, media, scheduled });
+    await run({ elements, advance, document, window, media, scheduled, photos, photoDraws });
   } finally {
     window.dispatchEvent(new Event('pagehide'));
     console.error = originalError;
@@ -70,6 +71,31 @@ test('wire host pauses, resumes visibility without catch-up and removes browser 
     window.dispatchEvent(new Event('pagehide')); assert.equal(scheduled.size, 0);
     assert.equal(getEventListeners(document, 'visibilitychange').length, 0);
     assert.equal(getEventListeners(window, 'resize').length, 0);
+  });
+});
+
+test('photo loading redraws a paused sky and drift obeys pause, visibility and reduced motion', async () => {
+  await withHost(({ elements, advance, document, media, photos, photoDraws, scheduled }) => {
+    elements.pause.click(); advance(1);
+    assert.equal(photoDraws.length, 0, 'unloaded image uses the safe fallback');
+    const photo = photos[0]; assert.equal(photo.src, '/sky-photo.png');
+    Object.assign(photo, { complete: true, naturalWidth: 1300, naturalHeight: 867 });
+    photo.onload(); advance(1);
+    const start = photoDraws.at(-1); assert.equal(scheduled.size, 0);
+    elements['scene-sky'].click(); advance(1); assert.deepEqual(photoDraws.at(-1), start);
+    elements.pause.click(); advance(120); assert.notDeepEqual(photoDraws.at(-1), start);
+    elements.pause.click(); advance(1); const paused = photoDraws.at(-1);
+    advance(60); elements['scene-wires'].click(); advance(1); assert.deepEqual(photoDraws.at(-1), paused);
+    elements.pause.click(); advance(1);
+    document.hidden = true; document.dispatchEvent(new Event('visibilitychange')); const hidden = photoDraws.at(-1);
+    advance(1, 30_000); assert.deepEqual(photoDraws.at(-1), hidden);
+    document.hidden = false; document.dispatchEvent(new Event('visibilitychange')); advance(1);
+    assert.ok(Math.abs(photoDraws.at(-1)[0] - hidden[0]) < .1, 'hidden time never catches up');
+    media.matches = true; const change = new Event('change'); Object.defineProperty(change, 'matches', { value: true }); media.dispatchEvent(change); advance(1);
+    const reduced = photoDraws.at(-1);
+    elements.pause.click(); advance(60); assert.deepEqual(photoDraws.at(-1), reduced, 'the photo stays still even if bird playback is resumed');
+    media.matches = false; const normal = new Event('change'); Object.defineProperty(normal, 'matches', { value: false }); media.dispatchEvent(normal); advance(60);
+    assert.notDeepEqual(photoDraws.at(-1), reduced);
   });
 });
 
