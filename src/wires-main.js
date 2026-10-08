@@ -120,22 +120,22 @@ function draw() {
   drawSky(ctx, skyPhoto, w, h, skyTime);
   const frame = scenes[active].getFrame();
   for (const wire of frame.geometry) {
-    ctx.strokeStyle = '#172c3fbf'; ctx.lineWidth = 1.15;
+    ctx.strokeStyle = '#26392ebf'; ctx.lineWidth = 1.15;
     ctx.beginPath(); ctx.moveTo(wire.x1, wire.y1);
     ctx.quadraticCurveTo((wire.x1 + wire.x2) / 2, (wire.y1 + wire.y2) / 2 + wire.sag * 2, wire.x2, wire.y2); ctx.stroke();
-    ctx.fillStyle = '#152c40'; ctx.font = `500 ${w < 640 ? 8 : 9}px "Avenir Next", Avenir, sans-serif`;
-    ctx.shadowColor = '#ffffff'; ctx.shadowBlur = 5;
+    ctx.fillStyle = '#26392e'; ctx.font = `500 ${w < 640 ? 8 : 9}px "Avenir Next", Avenir, sans-serif`;
+    ctx.shadowColor = '#faf6e7'; ctx.shadowBlur = 5;
     ctx.fillText(wire.lane.toUpperCase(), w < 640 ? 22 : 40, wire.y1 - 13);
     ctx.shadowBlur = 0;
   }
   for (const bird of frame.birds) {
     if (bird.birdId === selectedId && !bird.departing) {
-      ctx.strokeStyle = '#a2553563'; ctx.lineWidth = .8; ctx.beginPath();
+      ctx.strokeStyle = '#845f4163'; ctx.lineWidth = .8; ctx.beginPath();
       ctx.arc(bird.x, bird.y - (bird.pose === 'perched' ? bird.size * .7 : 0), bird.size * 1.55, 0, Math.PI * 2); ctx.stroke();
     }
     // Perched coordinates are feet; flight coordinates are body centres.
     const renderer = active === 'sky' ? drawPigeon : drawBird;
-    renderer(ctx, bird, { colour: '#172c3c', alpha: active === 'sky' ? (bird.readState === 'read' ? .60 : .95) * bird.alpha : bird.readState === 'read' ? .52 : .92 });
+    renderer(ctx, bird, { colour: '#26392e', alpha: active === 'sky' ? (bird.readState === 'read' ? .60 : .95) * bird.alpha : bird.readState === 'read' ? .52 : .92 });
   }
   const total = store.items().length;
   const visible = Object.values(frame.counts).reduce((sum, counts) => sum + counts.visible, 0);

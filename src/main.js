@@ -46,13 +46,13 @@ function readablePalette(palette) {
     const foreground = luminance(color);
     return (Math.max(background, foreground) + .05) / (Math.min(background, foreground) + .05);
   };
-  const foreground = [palette.fg, 'rgb(235,242,250)', 'rgb(26,26,26)', 'rgb(255,255,254)', 'rgb(3,4,3)']
+  const foreground = [palette.fg, 'rgb(238,229,210)', 'rgb(53,67,51)', 'rgb(250,246,231)', 'rgb(21,28,22)', 'rgb(255,254,248)', 'rgb(2,4,2)']
     .find(color => contrast(color) >= 4.5);
   const a = foreground.match(/\d+/g).map(Number);
   const b = palette.bg.match(/\d+/g).map(Number);
   const secondary = `rgb(${a.map((value, index) => Math.round(value * .72 + b[index] * .28)).join(',')})`;
-  return { ...palette, fg: foreground, muted: contrast(secondary) >= 4.5 ? secondary : foreground,
-    accent: contrast(palette.accent) >= 3 ? palette.accent : foreground };
+  return { ...palette, panel: palette.bg, fg: foreground, muted: contrast(secondary) >= 4.5 ? secondary : foreground,
+    accent: contrast(palette.accent) >= 4.5 ? palette.accent : foreground };
 }
 
 function syncControls() {

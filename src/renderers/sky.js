@@ -19,6 +19,6 @@ export function drawSky(ctx, photo, width, height, time) {
   }
   // A sky-coloured fallback also covers the brief image-loading interval.
   const gradient = ctx.createLinearGradient(0, 0, 0, height);
-  gradient.addColorStop(0, '#287fb3'); gradient.addColorStop(1, '#bfddea');
+  gradient.addColorStop(0, '#afbea0'); gradient.addColorStop(1, '#eee6d6');
   ctx.fillStyle = gradient; ctx.fillRect(0, 0, width, height);
 }

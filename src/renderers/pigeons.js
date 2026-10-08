@@ -69,7 +69,7 @@ function body(ctx, flare) {
 }
 
 /** Draw a pigeon in projected CSS pixels. All Canvas state is restored. */
-export function drawPigeon(ctx, bird, { colour = '#364743', alpha = 1 } = {}) {
+export function drawPigeon(ctx, bird, { colour = '#26392e', alpha = 1 } = {}) {
   if (![bird?.x, bird?.y, bird?.size].every(Number.isFinite) || bird.size <= 0) return false;
   // Existing perched birds keep their current renderer and feet anchor.
   if (bird.pose === 'perched') return drawBird(ctx, bird, { colour, alpha });

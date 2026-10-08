@@ -86,7 +86,7 @@ function flightBird(ctx, bird) {
 }
 
 /** Draw one bird. Perched x/y anchors the feet; flight x/y anchors the body. */
-export function drawBird(ctx, bird, { colour = '#263b3f', alpha = 1 } = {}) {
+export function drawBird(ctx, bird, { colour = '#26392e', alpha = 1 } = {}) {
   if (![bird?.x, bird?.y, bird?.size].every(Number.isFinite) || bird.size <= 0) return false;
   const activity = clamp(finite(bird.activity), 0, 1);
   ctx.save();
