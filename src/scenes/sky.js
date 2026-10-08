@@ -4,6 +4,7 @@
 import { PARAMS, resolveParameters } from '../parameters.js';
 import { createSceneFrame, sceneBirdId, birdVariation } from '../scene-contract.js';
 import {publicType} from '../inputs/public-appearance.js';
+import {createPublicFamilies} from './public-families.js';
 
 const STEP_MS = 1000 / 60;
 const TAU = Math.PI * 2;
@@ -19,6 +20,7 @@ export function createSkyScene({ width = 1200, height = 800, values = PARAMS.map
   const itemMetadata = new Map();
   const seenEvents = new Map();
   const MAX = 2400;
+  const families=createPublicFamilies(MAX);
   const px = new Float32Array(MAX), py = new Float32Array(MAX), pz = new Float32Array(MAX);
   const vx = new Float32Array(MAX), vy = new Float32Array(MAX), vz = new Float32Array(MAX);
   const sx = new Float32Array(MAX), sy = new Float32Array(MAX), sr = new Float32Array(MAX);
@@ -103,6 +105,7 @@ export function createSkyScene({ width = 1200, height = 800, values = PARAMS.map
     const LD = P.link, LD2 = LD * LD;
     cell = Math.max(R, LD, 12);
     buildGrid();
+    families.prepare(N,px,py,pz,vx,vy,vz);
     L = 0;
     linked.fill(0, 0, N);
 
@@ -149,7 +152,7 @@ export function createSkyScene({ width = 1200, height = 800, values = PARAMS.map
       let sepX = 0, sepY = 0, sepZ = 0;
       let aliX = 0, aliY = 0, aliZ = 0;
       let cohX = 0, cohY = 0, cohZ = 0;
-      let n = 0, cand = 0, links = 0, nk = 0;
+      let n = 0, weightSum = 0, cand = 0, links = 0, nk = 0;
 
       outer:
       for (let a = 0; a < 3; a++) for (let bb = 0; bb < 3; bb++) for (let cc = 0; cc < 3; cc++) {
@@ -167,8 +170,9 @@ export function createSkyScene({ width = 1200, height = 800, values = PARAMS.map
           const d2 = ox * ox + oy * oy + oz * oz;
           if (d2 < R2 && n < NEIGHBOUR_CAP) {
             n++;
-            aliX += vx[j]; aliY += vy[j]; aliZ += vz[j];
-            cohX += ox; cohY += oy; cohZ += oz;
+            const weight=families.neighbourWeight(i,j);weightSum+=weight;
+            aliX += vx[j]*weight; aliY += vy[j]*weight; aliZ += vz[j]*weight;
+            cohX += ox*weight; cohY += oy*weight; cohZ += oz*weight;
             if (d2 < S2 && d2 > 0.0001) {
               const d = Math.sqrt(d2), f = (1 - d / S) / d;
               sepX -= ox * f; sepY -= oy * f; sepZ -= oz * f;
@@ -184,10 +188,12 @@ export function createSkyScene({ width = 1200, height = 800, values = PARAMS.map
       let fx = 0, fy = 0, fz = 0;
       if (wind > 0) { fx = -Math.sin(windAngle) * wind; fy = Math.cos(windAngle) * wind; }
       if (n > 0) {
-        fx += (aliX / n - vx[i]) * wAli; fy += (aliY / n - vy[i]) * wAli; fz += (aliZ / n - vz[i]) * wAli;
-        fx += cohX / n * wCoh;            fy += cohY / n * wCoh;            fz += cohZ / n * wCoh;
+        fx += (aliX / weightSum - vx[i]) * wAli; fy += (aliY / weightSum - vy[i]) * wAli; fz += (aliZ / weightSum - vz[i]) * wAli;
+        fx += cohX / weightSum * wCoh;            fy += cohY / weightSum * wCoh;            fz += cohZ / weightSum * wCoh;
       }
       fx += sepX * wSep; fy += sepY * wSep; fz += sepZ * wSep;
+      const familyForce=families.steering(i,x,y,z,vx[i],vy[i],vz[i]);
+      fx+=familyForce[0];fy+=familyForce[1];fz+=familyForce[2];
 
       // Turbulence: a cheap swirling field so the flock keeps breaking up and re-forming.
       if (turb > 0) {
@@ -371,6 +377,7 @@ export function createSkyScene({ width = 1200, height = 800, values = PARAMS.map
       itemMetadata.set(id, { readState: ['read', 'unread', 'unknown'].includes(items[i].readState) ? items[i].readState : 'unknown',
         publicType: items[i].sourceId?.startsWith('public:') ? publicType(items[i].source) : null,
         label: items[i].sourceId?.startsWith('public:') ? (items[i].title||'Public item').slice(0,42) : undefined });
+      families.set(i,itemMetadata.get(id).publicType);
     }
     for (const id of birdCache.keys()) if (!selected.has(id)) birdCache.delete(id);
     for (const id of itemMetadata.keys()) if (!selected.has(id)) itemMetadata.delete(id);
