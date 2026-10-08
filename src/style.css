@@ -126,3 +126,64 @@ body.interface-hidden .interface { opacity:0; transform:translateY(-8px); pointe
   .toolbar #sources-toggle { grid-column:1 / -1; margin:0; order:-1; }
   .sources-empty { top:50%; font-size:12px; }
 }
+
+/* Public signals keep their identities and share one detail surface. */
+:root { --news:#df9878; --social:#b6c5a0; --music:#dcc47d; --quakes:#d0a3a6; --weather:#abc4c8; }
+:root[data-theme=light] { --news:#965038; --social:#4d6c43; --music:#886921; --quakes:#944f65; --weather:#48676d; }
+[data-type=news] { --type-color:var(--news); }
+[data-type=social] { --type-color:var(--social); }
+[data-type=music] { --type-color:var(--music); }
+[data-type=quakes] { --type-color:var(--quakes); }
+[data-type=weather] { --type-color:var(--weather); }
+#weather-sky { position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none; background:var(--bg); }
+#weather-sky img { position:absolute; inset:-2%; width:104%; height:104%; object-fit:cover; opacity:0; transition:opacity .7s ease; animation:sky-drift 95s ease-in-out infinite alternate; }
+#weather-sky img.is-active { opacity:1; }
+body.weather-night #weather-sky img { filter:brightness(.55); }
+@keyframes sky-drift { from { transform:translateX(-.6%) scale(1.015); } to { transform:translateX(.6%) scale(1.03); } }
+body.paused #weather-sky img { animation-play-state:paused; }
+body.has-weather-photo .top::before { content:''; position:absolute; z-index:-1; left:-36px; right:-36px; top:-36px; bottom:-40px; pointer-events:none; background:linear-gradient(var(--bg),color-mix(in srgb,var(--bg) 85%,transparent) 60%,transparent); }
+body.has-weather-photo .bottom::before { content:''; position:absolute; z-index:-1; inset:-35px -36px -30px; pointer-events:none; background:linear-gradient(transparent,var(--bg) 50%); }
+.public-legend { display:flex; gap:4px; flex-wrap:wrap; pointer-events:auto; margin-top:18px; max-width:640px; }
+.legend-entry { display:flex; align-items:center; gap:8px; min-height:44px; font-size:11px; padding:0 10px; border-radius:5px; background:color-mix(in srgb,var(--bg) 85%,transparent); }
+.legend-entry:hover,.legend-entry[aria-pressed=true] { box-shadow:0 0 0 1px color-mix(in srgb,var(--type-color) 60%,transparent); }
+.legend-count { color:var(--muted); font-size:10px; font-variant-numeric:tabular-nums; }
+.type-mark { display:inline-block; width:12px; height:12px; flex:none; fill:var(--type-color); stroke:var(--fg); stroke-width:1.1; stroke-linejoin:round; }
+.weather-controls { position:fixed; z-index:2; left:36px; bottom:112px; display:flex; flex-wrap:wrap; align-items:center; gap:6px 12px; max-width:530px; padding:8px 12px; border-radius:6px; background:color-mix(in srgb,var(--bg) 92%,transparent); }
+.weather-controls label { font-size:10px; color:var(--muted); }
+.weather-controls select { font:inherit; font-size:12px; color:var(--fg); background:var(--bg); border:0; min-height:44px; padding:0 25px 0 7px; border-radius:3px; cursor:pointer; }
+.weather-controls select:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+#sky-condition { font-size:11px; text-wrap:balance; }
+#photo-toggle { font-size:10px; padding:0 9px; }
+#photo-toggle[aria-pressed=true] { box-shadow:0 0 0 1px color-mix(in srgb,var(--fg) 18%,transparent); }
+#sky-credit { display:flex; align-items:center; flex-basis:100%; min-height:32px; font-size:9px; color:var(--muted); }
+body.settings-open .weather-controls { display:none; }
+.node-details { position:fixed; z-index:6; right:30px; top:110px; bottom:108px; width:min(430px,calc(100vw - 44px)); padding:22px 24px; overflow:auto; overscroll-behavior:contain; background:var(--bg); border-radius:9px; box-shadow:0 0 0 1px color-mix(in srgb,var(--fg) 18%,transparent),0 8px 30px #00000012,0 20px 55px #00000010; scrollbar-width:thin; }
+.detail-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.detail-heading .eyebrow::before { content:''; display:inline-block; width:6px; height:6px; margin-right:9px; background:var(--type-color); border-radius:50%; }
+#detail-close { font-size:25px; margin:-8px -10px 0 0; font-weight:300; }
+.detail-toolbar { display:flex; align-items:center; justify-content:space-between; min-height:44px; gap:10px; font-size:10px; color:var(--muted); }
+#detail-back { font-size:10px; margin-left:-12px; }
+.node-details h2 { font-family:'Iowan Old Style','Palatino Linotype',Palatino,Georgia,serif; font-size:clamp(25px,2.6vw,35px); line-height:1.14; letter-spacing:-.025em; font-weight:400; margin:14px 0 12px; text-wrap:balance; overflow-wrap:anywhere; }
+.node-details p { font-size:12px; line-height:1.75; text-wrap:pretty; margin:14px 0; }
+.node-details .detail-meta,#detail-extra,#detail-availability { color:var(--muted); font-size:10px; font-variant-numeric:tabular-nums; }
+#detail-link { display:inline-flex; min-height:44px; align-items:center; gap:8px; font-size:12px; margin-top:14px; }
+#detail-list { margin-top:24px; }
+.detail-record { display:block; width:100%; text-align:left; padding:15px 0; border-radius:0; box-shadow:0 -1px 0 color-mix(in srgb,var(--fg) 13%,transparent); min-height:60px; }
+.detail-record:hover { background:color-mix(in srgb,var(--fg) 7%,transparent); color:var(--fg); }
+.detail-record span { display:block; font-size:13px; line-height:1.5; text-wrap:pretty; overflow-wrap:anywhere; }
+.detail-record small { display:block; font-size:9px; line-height:1.7; color:var(--muted); margin-top:6px; font-variant-numeric:tabular-nums; }
+.public-mode .pointer-hint { font-size:10px; }
+@media(max-width:950px) { .public-legend { max-width:450px; } .legend-entry { padding:0 7px; gap:6px; } }
+@media(max-width:760px) {
+  .node-details { top:15px; right:15px; bottom:15px; width:calc(100vw - 30px); padding:22px; }
+  .public-legend { max-width:calc(100vw - 135px); gap:0 3px; margin-top:12px; }
+  .legend-entry { padding:0 5px; font-size:9px; gap:5px; }
+  .legend-count { font-size:9px; }
+  .weather-controls { left:22px; right:22px; bottom:108px; max-width:unset; padding:6px 9px; gap:4px 9px; }
+  .weather-controls label { font-size:9px; } .weather-controls select { font-size:11px; }
+  #sky-condition { font-size:10px; } #photo-toggle { font-size:9px; }
+  #sky-credit { font-size:8px; min-height:26px; }
+  .public-mode .pointer-hint { display:none; }
+  body.has-weather-photo .top::before { left:-22px; right:-22px; top:-25px; bottom:-35px; }
+}
+@media(prefers-reduced-motion:reduce) { #weather-sky img { animation:none; transition:none; } }

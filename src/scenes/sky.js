@@ -3,6 +3,7 @@
 // See ../../ATTRIBUTION.md. The numerical steering below is preserved.
 import { PARAMS, resolveParameters } from '../parameters.js';
 import { createSceneFrame, sceneBirdId, birdVariation } from '../scene-contract.js';
+import {publicType} from '../inputs/public-appearance.js';
 
 const STEP_MS = 1000 / 60;
 const TAU = Math.PI * 2;
@@ -301,6 +302,7 @@ export function createSkyScene({ width = 1200, height = 800, values = PARAMS.map
       bird.pose = bird.activity === 0 && Math.sin(seconds * 0.63 + bird.variation.glideOffset) > 0.84 ? 'gliding' : 'flying';
       bird.linked = linked[i];
       bird.readState = itemMetadata.get(id)?.readState || 'unknown';
+      bird.publicType = itemMetadata.get(id)?.publicType;
       bird.label = itemMetadata.get(id)?.label;
       bird.alpha = clamp(0.84 + (perspective - 1) * 0.6, 0.5, 1);
       frame.birds[i] = bird;
@@ -367,6 +369,7 @@ export function createSkyScene({ width = 1200, height = 800, values = PARAMS.map
       }
       ids[i] = id;
       itemMetadata.set(id, { readState: ['read', 'unread', 'unknown'].includes(items[i].readState) ? items[i].readState : 'unknown',
+        publicType: items[i].sourceId?.startsWith('public:') ? publicType(items[i].source) : null,
         label: items[i].sourceId?.startsWith('public:') ? (items[i].title||'Public item').slice(0,42) : undefined });
     }
     for (const id of birdCache.keys()) if (!selected.has(id)) birdCache.delete(id);
@@ -402,6 +405,7 @@ export function createSkyScene({ width = 1200, height = 800, values = PARAMS.map
         windKph: clamp(Number.isFinite(weather.windKph) ? weather.windKph : 0, 0, 100),
         windDirection: Number.isFinite(weather.windDirection) ? weather.windDirection : 0,
         isDay: weather.isDay !== false,
+        location: weather.location, temperatureC:weather.temperatureC, weatherCode:weather.weatherCode, precipitationMm:weather.precipitationMm,
       } : null,
       listening: listening && Number.isFinite(listening.expiresAt) && listening.expiresAt > now ? {
         observedAt: listening.observedAt, expiresAt: listening.expiresAt, playing: listening.playing === true,

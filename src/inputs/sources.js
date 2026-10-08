@@ -19,7 +19,7 @@ ${publicMarkup}
 <section class="source-card"><div class="source-card-heading"><h3>X / Twitter</h3><span class="source-badge">Setup required</span></div><p>The server adapter is ready for a chosen search feed. Paid requests are disabled. It needs a server-held bearer token, owner authentication and an approved provider budget before it can connect.</p><p class="source-status">No X requests are sent by this site.</p></section>
 <section class="source-card"><div class="source-card-heading"><h3>Documents, agents and Slack</h3><span class="source-badge">Fixture import</span></div><p>Import metadata using the shared item format to try these sources now. Live connectors require the specific product, account permissions and an integration route. Consumer Claude exports are historical records.</p></section>`;
 
-export function mountSources({onState=()=>{},notice=()=>{}}={}) {
+export function mountSources({onState=()=>{},notice=()=>{},onOpen=()=>{}}={}) {
   const panel=document.createElement('aside');panel.id='sources';panel.className='sources interface';panel.hidden=true;panel.setAttribute('aria-label','Activity sources');panel.innerHTML=markup;document.querySelector('main').append(panel);
   const $=id=>document.getElementById(id);
   $('gmail-origin').textContent=location.origin;
@@ -52,8 +52,8 @@ export function mountSources({onState=()=>{},notice=()=>{}}={}) {
   $('public-city').addEventListener('change',event=>publicSession.setCity(event.target.value));
   document.addEventListener('visibilitychange',()=>{if(document.hidden)publicSession.suspend();else if(mode==='public')publicSession.start();});
   function resetSample(){clearInterval(replay);replay=null;sample=createInputStore();const now=Date.now();sample.applySnapshot(SAMPLE_SOURCE,sampleItems(now),{revision:now,now});fixtureName='Sample flock';$('sample-status').textContent='36 fictional items. No accounts connected.';$('sample-replay').textContent='Replay activity';setMode('sample');}
-  function close(){panel.hidden=true;$('sources-toggle').setAttribute('aria-expanded','false');$('sources-toggle').focus();}
-  function open(){panel.hidden=false;$('sources-toggle').setAttribute('aria-expanded','true');$('sources-close').focus();}
+  function close({focus=true}={}){panel.hidden=true;$('sources-toggle').setAttribute('aria-expanded','false');if(focus)$('sources-toggle').focus();}
+  function open(){onOpen();panel.hidden=false;$('sources-toggle').setAttribute('aria-expanded','true');$('sources-close').focus();}
   $('sources-close').addEventListener('click',close);
   $('sources-toggle').addEventListener('click',()=>panel.hidden?open():close());
   panel.addEventListener('keydown',event=>{if(event.key==='Escape'){event.stopPropagation();close();}});
@@ -107,5 +107,5 @@ export function mountSources({onState=()=>{},notice=()=>{}}={}) {
   $('music-refresh').addEventListener('click',()=>refreshMusic());$('music-disconnect').addEventListener('click',()=>{cancel('music');musicKey='';musicUser='';$('music-key').value='';live.setEnvironment('listening',null);$('music-refresh').disabled=true;$('music-disconnect').disabled=true;sourceStatus('music','Disconnected','Last.fm credentials and current listening cleared.');});
   function tick(){if(mode==='public')publicSession.start();const now=Date.now();if(gmail.hasToken()&&now-lastGmail>=60_000)refreshGmail();if(weatherLocation&&now-lastWeather>=900_000)refreshWeather();if(musicKey&&now-lastMusic>=30_000)refreshMusic();if(['Live','Unavailable'].includes(states.gmail.status)&&!gmail.hasToken()){sourceStatus('gmail','Reconnect required','Authorization expired. Reconnect Gmail; last Inbox metadata is still shown.');$('gmail-refresh').disabled=true;}const env=live.getState(now).environment;if(states.weather.status==='Live'&&!env.weather)sourceStatus('weather','Stale','Weather observation expired. Calm fallback until the next refresh.');if(states.music.status==='Live'&&!env.listening)sourceStatus('music','Stale','Listening observation expired. Waiting for a fresh report.');emit();}
   createSourceLifecycle({tick,suspend(){publicSession.suspend();clearInterval(replay);replay=null;$('sample-replay').textContent='Replay activity';for(const kind of Object.keys(epochs))cancel(kind);$('gmail-refresh').disabled=!gmail.hasToken();$('weather-refresh').disabled=!weatherLocation;$('music-refresh').disabled=!musicKey;},dispose(){publicSession.dispose();gmail.disconnect();musicKey='';}});
-  resetSample();if(new URLSearchParams(location.search).get('sources')==='public')setMode('public');return {getState:()=>({...current().getState(),mode}),open,close};
+  resetSample();if(new URLSearchParams(location.search).get('sources')==='public')setMode('public');return {getState:()=>({...current().getState(),mode}),open,close,setCity:id=>publicSession.setCity(id)};
 }

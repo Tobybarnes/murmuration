@@ -2,6 +2,9 @@ import { PARAMS } from './parameters.js';
 import { createSimulation } from './simulation.js';
 import { FADERS_KEY, writeJSON, readFaders } from './storage.js';
 import { mountSources } from './inputs/sources.js';
+import {mountPublicExplorer} from './inputs/public-explorer.js';
+import {mountWeatherSky} from './inputs/weather-sky.js';
+import {hitPublicNode} from './inputs/public-appearance.js';
 
 const $ = (id) => document.getElementById(id);
 const canvas = $('flock');
@@ -10,6 +13,10 @@ let values = readFaders(defaults);
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 let paused = reducedMotion.matches;
 let sim;
+let sourceControls;
+let publicMode=false;
+const weatherSky=mountWeatherSky({onVisible:photo=>sim?.setDisplay({photo})});
+const explorer=mountPublicExplorer({onSelect:selectedId=>sim?.setDisplay({selectedId}),onCity:id=>sourceControls?.setCity(id),onOpen:()=>sourceControls?.close({focus:false})});
 let noticeTimer;
 let sourceItemCount = null;
 const controls = PARAMS.map((parameter, index) => {
@@ -95,6 +102,7 @@ function setPaused(next) {
 }
 function toggleSettings(open = $('settings').hidden) {
   $('settings').hidden = !open;
+  document.body.classList.toggle('settings-open',open);
   $('settings-toggle').setAttribute('aria-expanded', String(open));
   $('settings-toggle').innerHTML = `Tune flock <span aria-hidden="true">${open ? '−' : '+'}</span>`;
 }
@@ -135,6 +143,7 @@ try {
       for (const [key, value] of Object.entries(readablePalette(palette))) document.documentElement.style.setProperty(`--${key}`, value);
       const theme = values[15];
       document.documentElement.style.colorScheme = theme > .5 ? 'light' : 'dark';
+      document.documentElement.dataset.theme = theme > .5 ? 'light' : 'dark';
       document.querySelector('meta[name="theme-color"]').content = palette.bg;
     },
   });
@@ -145,9 +154,16 @@ try {
   console.error(error);
 }
 setPaused(paused);
-if (sim) mountSources({
+if (sim) sourceControls=mountSources({
+  onOpen:()=>explorer.close({focus:false}),
   notice,
   onState(state) {
+    publicMode=state.mode==='public';
+    document.querySelector('.pointer-hint').textContent=publicMode?'Select a node to explore · hold to draw the flock closer':'Hold a pointer to draw the flock closer';
+    document.body.classList.toggle('public-mode',publicMode);
+    weatherSky.update(state.environment.weather,publicMode);
+    explorer.update(state);
+    sim.setDisplay({publicMode});
     sourceItemCount = state.items.length;
     sim.sync(state.items, state.changes);
     sim.setEnvironment(state.environment);
@@ -182,7 +198,8 @@ window.addEventListener('keydown', event => {
     toggleSettings(false); $('settings-toggle').focus(); return;
   }
   if (event.target.closest('input,textarea,select,[contenteditable="true"]')) return;
-  if (event.target.closest('#sources')) return;
+  if (event.target.closest('#sources,#node-details')) return;
+  if(event.key==='Escape'){explorer.close({focus:false});return;}
   if (event.key === ' ' && event.target.closest('button,a')) return;
   const key = event.key.toLowerCase();
   if (key === ' ') { event.preventDefault(); setPaused(!paused); }
@@ -192,8 +209,10 @@ window.addEventListener('keydown', event => {
   else if (key === 'f') toggleFullscreen();
 });
 let pointerDown = false;
+let pointerStart=null;
 canvas.addEventListener('pointerdown', event => {
   pointerDown = true;
+  pointerStart={x:event.clientX,y:event.clientY,time:performance.now()};
   canvas.setPointerCapture(event.pointerId);
   sim?.setPointer(event.clientX, event.clientY, true);
 });
@@ -201,6 +220,11 @@ canvas.addEventListener('pointermove', event => {
   if (pointerDown) sim?.setPointer(event.clientX, event.clientY, true);
 });
 for (const name of ['pointerup', 'pointercancel', 'lostpointercapture']) canvas.addEventListener(name, event => {
-  pointerDown = false; sim?.setPointer(event.clientX || 0, event.clientY || 0, false);
+  if(name==='pointerup'&&publicMode&&pointerStart&&performance.now()-pointerStart.time<500&&Math.hypot(event.clientX-pointerStart.x,event.clientY-pointerStart.y)<10) {
+    const rect=canvas.getBoundingClientRect();
+    const id=hitPublicNode(sim.getFrame().birds,event.clientX-rect.left,event.clientY-rect.top);
+    if(id)explorer.selectItem(id);
+  }
+  pointerStart=null;pointerDown = false; sim?.setPointer(event.clientX || 0, event.clientY || 0, false);
 });
 window.addEventListener('blur', () => { pointerDown = false; sim?.setPointer(0, 0, false); });

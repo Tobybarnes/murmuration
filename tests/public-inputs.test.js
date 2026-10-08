@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {fetchPublicNews,normalizePublicPosts,normalizePublicQuakes,normalizePublicMusic} from '../src/inputs/public-providers.js';
+import {fetchPublicNews,normalizePublicNews,normalizePublicPosts,normalizePublicQuakes,normalizePublicMusic} from '../src/inputs/public-providers.js';
 import {createPublicSession} from '../src/inputs/public-session.js';
 import {createPublicMusicHandler} from '../server/public-music.mjs';
 import {createSkyScene} from '../src/scenes/sky.js';
@@ -8,22 +8,22 @@ import {createSkyScene} from '../src/scenes/sky.js';
 const now=1_790_000_000_000;
 const post={uri:'at://did:plc:abc123/app.bsky.feed.post/3abc',author:{did:'did:plc:abc123',handle:'bsky.app'},record:{text:'A public post',createdAt:new Date(now-1000).toISOString()}};
 const quake={id:'q1',properties:{type:'earthquake',title:'M 1.2 - Somewhere',time:now-1000,updated:now-500}};
+const musicResponse={provider:'listenbrainz',observedAt:now-3600_000,fromTs:now-86400_000,periodLabel:'Weekly community chart',tracks:[{id:'track1',artist:'Artist',title:'Song',url:'https://listenbrainz.org/statistics/',rank:1,playcount:100,listeners:null}]};
 const music={payload:{last_updated:now/1000-3600,from_ts:now/1000-86400,to_ts:now/1000+86400,recordings:[{artist_name:'Artist',track_name:'Song',recording_mbid:'6f33dc05-cdc0-4a2f-8039-e8fed082eec6',listen_count:100}]}};
 const settle=()=>new Promise(resolve=>setImmediate(resolve));
 
-test('news performs bounded complete reads and never publishes partial failed snapshots',async()=>{
-  let concurrent=0,max=0,reads=0;
-  const fetcher=async url=>{
-    if(url.includes('newstories'))return {ok:true,json:async()=>Array.from({length:30},(_,i)=>i+1)};
-    concurrent++;max=Math.max(max,concurrent);reads++;await settle();concurrent--;
-    const id=Number(url.split('/').at(-1).split('.')[0]);
-    return {ok:true,json:async()=>({id,type:'story',title:`Story ${id}`,time:(now-1000)/1000})};
-  };
+test('public news reads the fixed server adapter, retains article identities and exposes publisher detail',async()=>{
+  let seenURL;
+  const data={observedAt:now,records:[{id:'bbc:article1',title:'World news',url:'https://www.bbc.com/news/articles/article1',publisher:'BBC News',occurredAt:now-1000,summary:'A short description.'}],publishers:[{name:'BBC News',status:'current'},{name:'NPR',status:'unavailable'}]};
+  const fetcher=async url=>{seenURL=url;return {ok:true,json:async()=>data};};
   const first=await fetchPublicNews({now,fetcher}),second=await fetchPublicNews({now:now+1000,fetcher});
-  assert.equal(first.items.length,24);assert.equal(reads,48);assert.ok(max<=6);
+  assert.equal(seenURL,'/api/public-news');assert.equal(first.items.length,1);
   assert.deepEqual(first.items.map(item=>item.itemId),second.items.map(item=>item.itemId));
-  assert.ok(first.records.every(record=>record.url.startsWith('https://news.ycombinator.com/item?id=')));
-  await assert.rejects(()=>fetchPublicNews({now,fetcher:async url=>url.includes('newstories')?{ok:true,json:async()=>[1]}:{ok:false,status:503}}),/503/);
+  assert.equal(first.records[0].itemId,first.items[0].itemId);assert.equal(first.records[0].publisher,'BBC News');
+  assert.match(first.summary,/NPR unavailable/);assert.equal(first.sourceId,'public:news');
+  assert.throws(()=>normalizePublicNews({...data,observedAt:now-600001},now),/stale/);
+  assert.throws(()=>normalizePublicNews({...data,records:[{...data.records[0],url:'javascript:bad'}]},now),/invalid/);
+  await assert.rejects(()=>fetchPublicNews({now,fetcher:async()=>({ok:false,status:503})}),/503/);
 });
 
 test('public posts and quakes retain provider identities, accept a quiet hour, and reject stale/invalid data',()=>{
@@ -39,11 +39,11 @@ test('public posts and quakes retain provider identities, accept a quiet hour, a
 });
 
 test('weekly music deduplicates recordings and cannot claim current listening or revive an old chart',()=>{
-  const value=normalizePublicMusic({payload:{...music.payload,recordings:[...music.payload.recordings,...music.payload.recordings]}},now);
-  assert.equal(value.items.length,1);assert.equal(value.observedAt,music.payload.last_updated*1000);
+  const value=normalizePublicMusic({...musicResponse,tracks:[...musicResponse.tracks,...musicResponse.tracks]},now);
+  assert.equal(value.items.length,1);assert.equal(value.observedAt,musicResponse.observedAt);
   assert.equal(value.environment,undefined);assert.deepEqual(value.changes,[]);
   assert.match(value.summary,/week beginning/);
-  assert.throws(()=>normalizePublicMusic({payload:{...music.payload,last_updated:now/1000-259201}},now),/stale/);
+  assert.throws(()=>normalizePublicMusic({...musicResponse,observedAt:now-259201000},now),/stale/);
 });
 
 test('public bird labels show content while bird identity remains provider-scoped',()=>{
@@ -66,6 +66,48 @@ test('public polling is inactive by default, throttled, and reconciles new/remov
   session.suspend();time+=1000;session.tick();await settle();assert.equal(calls,2);
   session.start();await settle();assert.equal(calls,3);assert.equal(session.getState().items.length,2);
   session.dispose();session.start();assert.equal(session.getState().active,false);
+});
+
+function rankedSnapshot(source,ids,time) {
+  const sourceId=`public:${source}`;
+  return {sourceId,items:ids.map(id=>({itemId:`${sourceId}:${id}`,sourceId,source,category:'other',title:id,readState:'unknown',updatedAt:1})),
+    records:ids.map(id=>({itemId:`${sourceId}:${id}`,title:id,summary:`Detail for ${id}`,url:`https://example.com/${id}`})),
+    changes:[],observedAt:time,expiresAt:time+10000,summary:'Current ranked public items'};
+}
+
+test('public quotas admit 100 nodes while retaining the full provider details',async()=>{
+  const feeds=[['news','news',64],['social','bluesky',30],['music','lastfm',24],['quakes','usgs',9]].map(([id,source,count])=>({
+    id,interval:1000,load:async()=>rankedSnapshot(source,Array.from({length:count},(_,index)=>`${id}-${index}`),100),
+  }));
+  const session=createPublicSession({clock:()=>100,feeds});
+  session.start();await settle();
+  const state=session.getState();
+  assert.equal(state.items.length,100);
+  assert.equal(new Set(state.items.map(item=>item.itemId)).size,100);
+  for(const [source,count] of [['news',50],['bluesky',25],['lastfm',20],['usgs',5]])assert.equal(state.items.filter(item=>item.source===source).length,count);
+  assert.equal(state.sources.find(source=>source.id==='news').records.length,64);
+  assert.equal(state.sources.find(source=>source.id==='news').records[63].summary,'Detail for news-63');
+  assert.equal(state.sources.find(source=>source.id==='quakes').records[8].summary,'Detail for quakes-8');
+  assert.equal(state.changes.length,0);
+  session.dispose();
+});
+
+test('newest earthquakes enter the quota on refresh without changing existing identities or replaying arrivals',async()=>{
+  let time=100,ids=['a','b','c','d','e','f'];
+  const session=createPublicSession({clock:()=>time,feeds:[{id:'quakes',interval:1000,load:async()=>rankedSnapshot('usgs',ids,time)}]});
+  session.start();await settle();
+  assert.deepEqual(session.getState().items.map(item=>item.itemId),['a','b','c','d','e'].map(id=>`public:usgs:${id}`));
+  time+=1000;ids=['new','a','b','c','d','e','f'];session.tick();await settle();
+  const changed=session.getState();
+  assert.deepEqual(changed.items.map(item=>item.itemId),['new','a','b','c','d'].map(id=>`public:usgs:${id}`));
+  assert.deepEqual(changed.changes.map(change=>change.itemId),['public:usgs:new']);
+  assert.equal(changed.sources[0].records.find(record=>record.itemId==='public:usgs:e').summary,'Detail for e');
+  time+=1000;session.tick();await settle();
+  assert.deepEqual(session.getState().items.map(item=>item.itemId),changed.items.map(item=>item.itemId));
+  assert.deepEqual(session.getState().changes.map(change=>change.eventId),changed.changes.map(change=>change.eventId));
+  time+=5001;session.tick();await settle();
+  assert.equal(session.getState().changes.length,0);
+  session.dispose();
 });
 
 test('late responses after a mode switch/disposal cannot populate the public store',async()=>{
@@ -95,7 +137,7 @@ test('music adapter uses a fixed provider and identifying agent, coalesces calls
   await handler({method:'GET',url:'/?target=https://private.test'},response());
   assert.equal(calls,1);assert.match(seenURL,/^https:\/\/api.listenbrainz.org\/1\/stats\/sitewide\/recordings/);
   assert.match(seenHeaders['User-Agent'],/github.com\/Tobybarnes\/murmuration/);assert.equal(a.statusCode,200);
-  assert.match(a.headers['Cache-Control'],/s-maxage=3600/);assert.equal(JSON.parse(a.body).payload.recordings.length,1);
+  assert.match(a.headers['Cache-Control'],/s-maxage=3600/);assert.equal(JSON.parse(a.body).tracks.length,1);
   const denied=response();await handler({method:'POST'},denied);assert.equal(denied.statusCode,405);assert.equal(calls,1);
 });
 

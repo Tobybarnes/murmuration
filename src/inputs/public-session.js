@@ -1,5 +1,8 @@
 import {createInputStore} from './store.js';
 import {PUBLIC_FEEDS,PUBLIC_CITIES} from './public-providers.js';
+import {publicType} from './public-appearance.js';
+
+export const PUBLIC_NODE_LIMITS={news:50,social:25,music:20,quakes:5};
 
 // Public signals have their own store and request lifecycle. Personal data never
 // enters this store, and only the selected mode makes public network requests.
@@ -9,7 +12,19 @@ export function createPublicSession({feeds=PUBLIC_FEEDS,onChange=()=>{},clock=Da
   const pending=new Map();
   let active=false,closed=false,epoch=0,city=PUBLIC_CITIES[0];
   function getState(now=clock()) {
-    return {...store.getState(now),active,city,sources:[...states.values()].map(state=>({...state,
+    const data=store.getState(now),counts={};
+    const byId=new Map(data.items.map(item=>[item.itemId,item])),selected=new Set();
+    // Snapshots keep existing Map entries in place. Use each provider's current
+    // record order so a new arrival can enter a capped flock immediately.
+    const ordered=[...states.values()].flatMap(state=>(state.records??[]).map(record=>byId.get(record.itemId))).filter(Boolean).concat(data.items);
+    const items=ordered.filter(item=>{
+      if(selected.has(item.itemId))return false;
+      selected.add(item.itemId);
+      const type=publicType(item.source),limit=PUBLIC_NODE_LIMITS[type];
+      if(!limit)return true;
+      counts[type]=(counts[type]??0)+1;return counts[type]<=limit;
+    });
+    return {...data,items,active,city,sources:[...states.values()].map(state=>({...state,
       status:state.status==='live'&&state.expiresAt<=now?'stale':state.status,
     }))};
   }
@@ -27,7 +42,7 @@ export function createPublicSession({feeds=PUBLIC_FEEDS,onChange=()=>{},clock=Da
       store.applySnapshot(result.sourceId,result.items,{revision:receivedAt,now:receivedAt});
       store.applyChanges(result.changes??[],receivedAt);
       for(const [kind,value] of Object.entries(result.environment??{}))store.setEnvironment(kind,value);
-      states.set(feed.id,{...states.get(feed.id),status:'live',message:result.summary,lastSeenAt:receivedAt,observedAt:result.observedAt,reportedAt:result.reportedAt,timestampLabel:result.timestampLabel,expiresAt:result.expiresAt,records:result.records??[]});
+      states.set(feed.id,{...states.get(feed.id),status:'live',message:result.summary,lastSeenAt:receivedAt,observedAt:result.observedAt,reportedAt:result.reportedAt,timestampLabel:result.timestampLabel,expiresAt:result.expiresAt,records:result.records??[],musicMeta:result.musicMeta,publisherStatus:result.publisherStatus});
     } catch(error) {
       // A failed parallel news read must cancel its siblings before the feed's
       // controller leaves the pending map.

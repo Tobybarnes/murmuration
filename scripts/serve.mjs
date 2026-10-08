@@ -2,6 +2,7 @@ import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import { resolve, extname, sep } from 'node:path';
 import publicMusic from '../api/public-music.mjs';
+import publicNews from '../api/public-news.mjs';
 const root = resolve(process.argv[2] || '.');
 const port = Number(process.env.PORT || 5173);
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.json': 'application/json', '.png': 'image/png' };
@@ -10,6 +11,7 @@ createServer(async (req, res) => {
     if (!['GET', 'HEAD'].includes(req.method)) { res.writeHead(405); res.end(); return; }
     const url = new URL(req.url, 'http://localhost');
     if(url.pathname==='/api/public-music'){await publicMusic(req,res);return;}
+    if(url.pathname==='/api/public-news'){await publicNews(req,res);return;}
     let pathname = decodeURIComponent(url.pathname);
     if (pathname === '/') pathname = '/index.html';
     if (root === resolve('.') && pathname === '/favicon.svg') pathname = '/public/favicon.svg';

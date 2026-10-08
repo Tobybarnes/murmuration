@@ -28,6 +28,7 @@ export function createSimulation(canvas, {
   }
   if (!['dots', 'birds'].includes(appearance)) throw new TypeError('Appearance must be dots or birds.');
   let scene;
+  let display = {publicMode:false,photo:false,selectedId:null};
   let overlays = appearance === 'dots';
   const renderer = createCanvasRenderer(ctx);
   const target = normalizeValues(values);
@@ -115,7 +116,7 @@ export function createSimulation(canvas, {
   }
 
   function render() {
-    renderer.draw(scene.getFrame(), { colours: C, appearance, connections: overlays, labels: overlays });
+    renderer.draw(scene.getFrame(), { colours: C, appearance, connections: overlays, labels: overlays,...display });
     frames++;
     statsFrames++;
     dirty = false;
@@ -264,6 +265,11 @@ export function createSimulation(canvas, {
     dirty = true;
   }
 
+  function setDisplay(next) {
+    if(destroyed)return;
+    display={...display,...next};dirty=true;
+  }
+
   updateColours();
   resize();
   scene = createSkyScene({ width: W, height: H, values: cur });
@@ -276,6 +282,6 @@ export function createSimulation(canvas, {
   return {
     setParameter, setParameters, reset, scatter, setPaused, setPointer,
     resize, destroy, getState, getFrame: () => scene.getFrame(),
-    sync, setEnvironment, setAppearance, setOverlays,
+    sync, setEnvironment, setAppearance, setOverlays, setDisplay,
   };
 }

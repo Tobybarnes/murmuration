@@ -12,13 +12,15 @@
 </head>
 <body>
   <main aria-label="Murmuration visualizer">
-    <canvas id="flock" aria-label="Animated flock of simulated dots. Hold a pointer on the canvas to attract them."></canvas>
+    <div id="weather-sky" aria-hidden="true"><img alt="" decoding="async"><img alt="" decoding="async"></div>
+    <canvas tabindex="0" id="flock" aria-label="Animated flock of simulated dots. Hold a pointer on the canvas to attract them."></canvas>
     <p id="sources-empty" class="sources-empty interface" hidden>No item birds yet. Open Sources to connect an Inbox or return to the sample flock.</p>
     <header class="top interface">
       <div class="identity">
         <span class="eyebrow">Activity study <span class="edition">/ 002</span></span>
         <h1>Murmuration<span class="title-dot">.</span></h1>
-        <p>A flock shaped by your day.</p>
+        <p>flocks shaped by realtime data</p>
+        <div id="public-legend" class="public-legend" role="group" aria-label="Explore public input types" hidden></div>
       </div>
       <div class="toolbar" aria-label="Playback controls">
         <button id="sources-toggle" type="button" aria-expanded="false" aria-controls="sources">Sources</button>
@@ -32,11 +34,23 @@
         </button>
       </div>
     </header>
+    <div id="weather-controls" class="weather-controls interface" hidden>
+      <label for="scene-city">Weather in</label><select id="scene-city" aria-label="Weather city"></select>
+      <span id="sky-condition">Reading weather…</span><button id="photo-toggle" type="button" aria-pressed="true">Photo sky</button>
+      <a id="sky-credit" target="_blank" rel="noopener noreferrer" hidden></a>
+    </div>
+    <aside id="node-details" class="node-details interface" aria-label="Public input details" hidden>
+      <div class="detail-heading"><span id="detail-kind" class="eyebrow"></span><button id="detail-close" class="icon-button" type="button" aria-label="Close input details">×</button></div>
+      <div class="detail-toolbar"><button id="detail-back" type="button" hidden>← All items</button><span id="detail-status"></span></div>
+      <h2 id="detail-title"></h2><p id="detail-meta" class="detail-meta"></p><p id="detail-copy"></p>
+      <div id="detail-item" hidden><p id="detail-extra"></p><p id="detail-availability"></p><a id="detail-link" target="_blank" rel="noopener noreferrer" hidden></a></div>
+      <div id="detail-list"></div>
+    </aside>
     <div class="bottom interface">
       <div class="observation">
         <div class="flock-status"><span class="status-dot" aria-hidden="true"></span><span><strong id="count">36</strong> <span id="count-label">sample items</span></span><span class="divider">/</span><span id="play-state">In flight</span></div>
         <div class="scene-actions">
-          <span class="pointer-hint">Hold anywhere to draw the flock closer</span>
+          <span class="pointer-hint">Hold a pointer to draw the flock closer</span>
           <button id="settings-toggle" type="button" aria-expanded="false" aria-controls="settings">Tune flock <span aria-hidden="true">+</span></button>
         </div>
       </div>
